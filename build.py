@@ -225,6 +225,12 @@ def sun():
 
 
 def main():
+    # Test raporlarinda Turkce harfler var; konsol kod sayfasi ne olursa olsun
+    # yazdirirken hata vermesin.
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
     hedef = sys.argv[1] if len(sys.argv) > 1 else "exe"
     os.chdir(KOK)
     if hedef in ("-h", "--help", "yardim"):

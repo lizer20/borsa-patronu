@@ -155,7 +155,6 @@ static IslemSonucu IslemYap(Oyun& o, int idx, bool alim, int adet, IslemKaynagi 
     string onEk;
     if (kaynak == IslemKaynagi::EMIR) onEk = M("EMİR - ", "ORDER - ");
     else if (kaynak == IslemKaynagi::TEMINAT) onEk = M("TEMİNAT - ", "MARGIN - ");
-    const string adetStr = to_string(adet) + M(" adet ", " ") + h.kod;
     float dolum = 0.0f, kar = 0.0f;
 
     if (alim && h.adet >= 0) {
@@ -273,7 +272,6 @@ static IslemSonucu IslemYap(Oyun& o, int idx, bool alim, int adet, IslemKaynagi 
     }
     DevralmaKontrolEt(o, idx);
     RutbeVeHedefKontrolEt(o);
-    (void)adetStr;
     return sonuc;
 }
 

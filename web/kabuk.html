@@ -38,6 +38,16 @@
           'Oyun baslatilamadi / The game could not start.\n' + (neden || '');
       }
     };
+    // TEST MODU: adrese "?zamanlayici" eklenirse kareler requestAnimationFrame
+    // yerine zamanlayiciyla uretilir. Tarayici, GORUNMEYEN bir sayfada
+    // requestAnimationFrame'i hic cagirmaz; otomatik testler (gizli sekme/panel)
+    // oyunu ancak bu modda ilerletebilir. Normal oyuncuyu etkilemez.
+    if (location.search.indexOf('zamanlayici') >= 0) {
+      window.requestAnimationFrame = function (f) {
+        return setTimeout(function () { f(performance.now()); }, 16);
+      };
+      window.cancelAnimationFrame = function (id) { clearTimeout(id); };
+    }
     // Klavye kisayollari (Bosluk, 1-8, M) icin tuvalin odakta olmasi gerekir;
     // iframe icinde ilk tiklamada odagi tuvale ver. Bosluk tusu sayfayi kaydirmasin.
     window.addEventListener('mousedown', function () {

@@ -1,37 +1,97 @@
-BORSA PATRONU  -  v1.1
+BORSA PATRONU  -  v2.0
 ======================
+(English below)
 
-Kucuk bir sermayeyle borsa imparatorlugu kurdugun, Turkce bir borsa yonetim
-simulasyonu. 6 hisseyi al-sat, haberleri ve kuresel gelismeleri takip et,
-rutbe atladikca yeni hisselerin kilidini ac, bir sirketin yarisindan fazlasini
-toplayip patronu ol ve yonetim kararlarini sen ver.
+Küçük bir sermayeyle borsa imparatorluğu kurduğun bir borsa yönetim oyunu.
+Hisseleri al-sat, haberleri ve küresel gelişmeleri takip et, rütbe atladıkça
+yeni hisselerin ve araçların kilidini aç, bir şirketin yarısından fazlasını
+toplayıp patronu ol ve yönetim kararlarını sen ver.
 
 NASIL OYNANIR
 -------------
-- Her sey fare ile: sol paneldeki AL / SAT butonlari, altindaki "Islem Adedi".
-- Ust sagdaki "Duraklat" butonu duraklatma menusunu acar:
-  Kaydet / Ayarlar / Ana Menu / Cikis.
-- Haberler duyurulduktan BIRKAC SANIYE SONRA fiyata yansir - o arada okuyup
-  karar vermen icin haber bandi sabit kalir. Iyi mi kotu mu oldugunu sana
-  soylemiyoruz; bunu tahmin etmek oyunun bir parcasi.
-- Bir sirkette 501/1000 hisseye ulasirsan sirketi devralirsin ve periyodik
-  yonetim kararlari gelir: riskli secim hizli kazandirir ama o hisseye kalici
-  oynaklik ekler.
+- Her şey fare ile: kartlardaki AL / SAT düğmeleri ve altındaki "İşlem Adedi".
+- Haberler duyurulduktan 5 SANİYE SONRA fiyata yansır. İyi mi kötü mü olduğunu
+  sana söylemiyoruz; okuyup tahmin etmek oyunun kendisi.
+- Büyük ve aceleci emirler pahalıdır ("maliyet" yüzdesine bak). Emri zamana
+  yayarsan ucuzlar. Sürekli al-sat çevirmek para kaybettirir.
+- Rütbe atladıkça açılanlar:
+    Deneyimli Yatırımcı : EMİR düğmesi (zarar kes, kâr al, limit alım)
+    Uzman Trader        : açığa satış (elinde olmayan hissede SAT'a bas)
+    Borsa Kaplanı       : kredi ve içeriden bilgi mektupları
+- Kredi ve açığa satışta teminat oranına dikkat: %40'ın altına inerse
+  pozisyonların zorla kapatılır.
+- Bir şirkette 501/1000 hisseye ulaşırsan şirketi devralırsın.
+- İlk oyunda kısa bir rehber çıkar; Ayarlar'dan kapatıp yeniden başlatabilirsin.
+
+Kısayollar: Boşluk / P duraklat, 1-8 işlem adedi, M ses, F12 ekran görüntüsü.
+Dil: ana menünün sağ üstünden ya da Ayarlar'dan (Türkçe / English).
 
 KAYIT
 -----
-Oyun, kaydini bu .exe'nin yanindaki "borsa_kayit.sav" dosyasina yazar.
-Oyunu tasirsan kaydini da yanina alman yeterli. Cikarken kaydetmeyi
-unutursan oyun sana sorar.
+Oyun, kaydını bu .exe'nin yanındaki "borsa_kayit.sav" dosyasına; başarımlarını
+ve rekorlarını "borsa_profil.sav" dosyasına yazar. Oyunu taşırsan bu iki
+dosyayı da yanına alman yeterli. Eski sürümlerin kayıtları açılır.
 
-CALISTIRMA / GUVENLIK UYARISI
+ÇALIŞTIRMA / GÜVENLİK UYARISI
 -----------------------------
-Windows 10/11, 64 bit. OpenGL 3.3 destegi gerekir. Kurulum gerekmez,
-yanina hicbir dosya koymana gerek yok - tek .exe.
+Windows 10/11, 64 bit. OpenGL 3.3 desteği gerekir. Kurulum gerekmez - tek .exe.
 
-Oyun kod imzalama sertifikasi ile imzali OLMADIGI icin Windows SmartScreen
-"Bilinmeyen yayimci" uyarisi verebilir. Bu bagimsiz gelistiricilerin imzasiz
-programlarinda normaldir. Calistirmak icin:
-  "Daha fazla bilgi"  ->  "Yine de calistir"
+Oyun kod imzalama sertifikası ile imzalı OLMADIĞI için Windows SmartScreen
+"Bilinmeyen yayımcı" uyarısı verebilir. Bu, bağımsız geliştiricilerin imzasız
+programlarında normaldir. Çalıştırmak için:
+  "Daha fazla bilgi"  ->  "Yine de çalıştır"
 
-Iyi kazanclar!
+Bu bir kurgudur; şirket adları tanıdık olsa da fiyatlar ve haberler tamamen
+uydurmadır. Yatırım tavsiyesi değildir.
+
+İyi kazançlar!
+
+
+==============================================================================
+BORSA PATRONU  -  v2.0   (English)
+==============================================================================
+
+A stock market tycoon game: build a market empire from a small stake. Trade
+stocks, follow company news and global events, rank up to unlock new stocks
+and tools, collect more than half of a company to become its boss and make
+the management calls.
+
+HOW TO PLAY
+-----------
+- Everything is done with the mouse: the BUY / SELL buttons on each card and
+  the "Trade Size" panel below.
+- News hits the price 5 SECONDS after it is announced. We do not tell you
+  whether it is good or bad; reading it and deciding is the game.
+- Large, rushed orders are expensive (watch the "cost" percentage). Spreading
+  an order over time makes it cheaper. Churning trades loses money.
+- Ranking up unlocks:
+    Seasoned Investor : the ORDER button (stop-loss, take profit, limit buy)
+    Expert Trader     : short selling (press SELL on a stock you do not hold)
+    Market Tiger      : credit and insider letters
+- With credit or shorts, watch your margin ratio: below 40% your positions
+  are force-closed.
+- Reach 501/1000 shares of a company to take it over.
+- A short guide appears in your first game; you can turn it off or restart it
+  in Settings.
+
+Shortcuts: Space / P pause, 1-8 trade size, M sound, F12 screenshot.
+Language: top right of the main menu, or in Settings (Türkçe / English).
+
+SAVES
+-----
+The game writes its save to "borsa_kayit.sav" and your achievements and
+records to "borsa_profil.sav", both next to this .exe. If you move the game,
+take those two files along.
+
+RUNNING / SECURITY WARNING
+--------------------------
+Windows 10/11, 64-bit, OpenGL 3.3. No installation needed - a single .exe.
+
+The game is NOT code-signed, so Windows SmartScreen may show an "Unknown
+publisher" warning. This is normal for unsigned indie software. To run it:
+  "More info"  ->  "Run anyway"
+
+This is fiction: the company names may look familiar, but prices and news are
+entirely made up. Not investment advice.
+
+Good luck!

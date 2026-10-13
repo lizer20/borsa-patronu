@@ -43,6 +43,33 @@ EM_JS(int, js_tarayici_turkce, (), {
     return l.indexOf("tr") === 0 ? 1 : 0;
 });
 
+// ---- KACMAYAN TIKLAMA ----
+// raylib fare tusunu "su an basili mi" diye KARE BASINA bir kez yoklar. Tarayicida
+// basma ve birakma olaylari AYNI kare icinde gelirse (cok hizli tik, dusuk kare
+// hizi, otomasyon araclari) tik hic gorulmeden kaybolur. Bunu onlemek icin
+// mousedown olayini kendimiz yakalayip konumuyla birlikte sakliyoruz; GirdiOku()
+// her karede bunu da sorar. (Dokunmatik ekranlarda raylib dokunusu zaten fare
+// tusuna esler ve tarayicinin sahte mousedown uretmesini engeller.)
+EM_JS(void, js_tik_dinleyici_kur, (), {
+    Module.borsaTik = -1;
+    var c = Module.canvas;
+    c.addEventListener('mousedown', function (e) {
+        if (e.button !== 0) return;
+        var r = c.getBoundingClientRect();
+        if (r.width <= 0 || r.height <= 0) return;
+        var x = Math.max(0, Math.min(9999, Math.round((e.clientX - r.left) * (c.width / r.width))));
+        var y = Math.max(0, Math.min(9999, Math.round((e.clientY - r.top) * (c.height / r.height))));
+        Module.borsaTik = x * 10000 + y;
+    }, true);
+});
+
+// Bekleyen bir tik varsa x*10000+y (tuval pikseli) doner ve temizler; yoksa -1.
+EM_JS(double, js_tik_al, (), {
+    var t = Module.borsaTik;
+    Module.borsaTik = -1;
+    return (typeof t === 'number') ? t : -1;
+});
+
 static string DepoAnahtari(const string& ad) { return "borsa_patronu:" + ad; }
 
 static bool DepoYaz(const string& ad, const string& icerik) {

@@ -449,6 +449,23 @@ static void EtkilesimTesti(Uygulama& u) {
               kopya.hisseler[i0].emirler[EMIR_LIMIT_ALIM].aktif && kopya.hisseler[i0].emirler[EMIR_LIMIT_ALIM].adet == 40 &&
               fabsf(kopya.borc - 321.0f) < 0.01f && kopya.senaryo == o.senaryo,
           "kayit: yaz -> oku ayni durumu verir (V5)");
+    {
+        // Eski surum uyumlulugu: V5 metninden SONDAKI V5 blogunu atip etiketi
+        // degistirerek gercek bir V4 dosyasi uretiyoruz (V5 sadece sona alan ekler).
+        vector<string> satirlar;
+        istringstream ss(metin);
+        string satir;
+        while (std::getline(ss, satir)) satirlar.push_back(satir);
+        size_t v5Satir = 14 + o.hisseler.size() * (4 + EMIR_TUR_SAYISI * 3);
+        string v4 = string(KAYIT_ETIKETI_V4) + "\n";
+        for (size_t i = 1; i + v5Satir < satirlar.size(); i++) v4 += satirlar[i] + "\n";
+        Oyun eski = o;
+        eski.Baslat(S_ZAMAN, true);
+        bool v4Yuklendi = OyunuMetindenYukle(eski, v4);
+        bekle(v4Yuklendi && eski.senaryo == S_KLASIK && eski.rehberAdim == -1 && eski.borc == 0.0f &&
+                  fabsf(eski.bakiye - o.bakiye) < 0.01f && eski.islemSayisi == o.islemSayisi,
+              "kayit: eski V4 dosyasi yuklenir, yeni alanlar varsayilanda kalir");
+    }
     bekle(!OyunuMetindenYukle(kopya, "BORSAPATRONU_SAVE_V1\n1\n2\n"), "kayit: V1 dosyasi reddedilir");
     bekle(!OyunuMetindenYukle(kopya, metin.substr(0, metin.size() / 2)), "kayit: yarim (bozuk) dosya reddedilir, cokme yok");
     bekle(!OyunuMetindenYukle(kopya, "BORSAPATRONU_SAVE_V5\nabc\n"), "kayit: sayi yerine metin iceren dosya reddedilir");

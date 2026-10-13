@@ -31,6 +31,17 @@ static Girdi GirdiOku() {
     static const int tuslar[8] = {KEY_ONE, KEY_TWO, KEY_THREE, KEY_FOUR, KEY_FIVE, KEY_SIX, KEY_SEVEN, KEY_EIGHT};
     for (int i = 0; i < 8; i++)
         if (IsKeyPressed(tuslar[i])) g.tusAdet = i;
+#if BORSA_WEB
+    // Ayni kare icinde basilip birakilan tiklar raylib'in yoklamasindan kacar;
+    // sayfadaki mousedown dinleyicisinden gelen tiki de sayiyoruz (bkz. platform.h).
+    double bekleyenTik = js_tik_al();
+    if (bekleyenTik >= 0.0) {
+        float tx = (float)floor(bekleyenTik / 10000.0);
+        float ty = (float)(bekleyenTik - (double)tx * 10000.0);
+        g.fare = {(tx - ofsX) / olcek, (ty - ofsY) / olcek};
+        g.tiklandi = true;
+    }
+#endif
 #if !BORSA_WEB
     // raylib'in WindowShouldClose()'u her cagrildiginda kapatma bayragini
     // sifirlar; istegi burada "yutup" kendi onay penceremizi gosterebiliyoruz.
@@ -52,6 +63,9 @@ static void UygulamaBaslat(Uygulama& u) {
 #endif
     SetExitKey(KEY_NULL);
     SetRandomSeed((unsigned int)time(NULL));
+#if BORSA_WEB
+    js_tik_dinleyici_kur();
+#endif
 
     // Oyun her zaman 1280x720 (tam 16:9) sanal sahneye cizilir; 1920x1080 /
     // 2560x1440 gibi yaygin ekranlarda olcek tam sayi cikar ve pillarbox kalmaz.
@@ -72,7 +86,9 @@ static void UygulamaBaslat(Uygulama& u) {
     u.ui.yukleBtn.aktif = KayitVarMi();
 }
 
-static void UygulamaKapat(Uygulama& u) {
+// (Tarayicida "kapatma" yoktur - sekme kapaninca her sey birakilir; bu yuzden
+// web derlemesinde cagrilmaz.)
+[[maybe_unused]] static void UygulamaKapat(Uygulama& u) {
     UnloadRenderTexture(u.sahne);
     FontBosalt();
     u.oyun.sesler.Bosalt();
