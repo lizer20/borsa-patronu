@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-  <assemblyIdentity type="win32" name="BorsaPatronu.Oyun" version="1.1.0.0" processorArchitecture="amd64"/>
-  <description>Borsa Patronu - Turkce borsa yonetim simulasyonu</description>
+  <!-- Bu surum numarasi hicbir yerde GOSTERILMEZ ve bilerek sabittir; oyunun
+       gercek surumu src/surum.h dosyasindan gelir. -->
+  <assemblyIdentity type="win32" name="BorsaPatronu.Oyun" version="1.0.0.0" processorArchitecture="amd64"/>
+  <description>Borsa Patronu - borsa yonetim oyunu</description>
   <!-- asInvoker: oyun yonetici yetkisi ISTEMEZ. Bunu belirtmek, Windows'un
        "kurulum programi olabilir" sezgisel kontrolunun devreye girip gereksiz
        yere UAC istemesini de onler. DPI farkindaligi BILEREK belirtilmedi:

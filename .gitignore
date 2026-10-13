@@ -2,6 +2,7 @@
 *.exe
 *.o
 /web_cikti/
+/build/
 /test/cikti/
 
 # Dagitim paketleri ve eski elle alinmis snapshot'lar (ikili dosyalar; depoya girmez)
@@ -12,6 +13,8 @@
 borsa_kayit.sav
 borsa_profil.sav
 screenshot*.png
+
+test/denge_raporu.txt
 
 # Yerel arac ayarlari
 AGENTS.md

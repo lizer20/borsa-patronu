@@ -1,12 +1,18 @@
 /* ============================================================================
    Windows kaynak dosyasi - .exe'ye ikon, surum bilgisi ve manifest gomer.
 
-   Derleme:  windres borsa_patronu.rc -O coff -o borsa_patronu_res.o
+   Derleme:  python build.py   (windres bu dosyayi kendisi isler)
+
+   SURUM NUMARASI burada YAZILMAZ; src/surum.h dosyasindan gelir. Yeni surumde
+   sadece o dosyayi degistir.
    ============================================================================ */
+
+#include "src/surum.h"
 
 /* ---- IKON ----
    GLFW_ICON : raylib/GLFW pencere basligi + gorev cubugu ikonu icin bu ADI arar.
-   1         : Explorer'in .exe simgesi (sayisal ID isimli olandan once gelir).  */
+   1         : Explorer'in .exe simgesi (sayisal ID isimli olandan once gelir).
+   Ikonu degistirirsen IKI girdiyi de birak.                                   */
 GLFW_ICON ICON "borsa_patronu.ico"
 1         ICON "borsa_patronu.ico"
 
@@ -17,11 +23,10 @@ GLFW_ICON ICON "borsa_patronu.ico"
    Bu blok olmadan dosyanin Ozellikler > Ayrintilar sekmesi BOMBOS gorunur;
    isimsiz/kimliksiz bir .exe hem kullaniciya hem sezgisel taramalara daha
    supheli gelir. SmartScreen uyarisini TEK BASINA kaldirmaz (o itibar/imza
-   isidir) ama dosyanin kimligi belli olur.
-   ONEMLI: yeni surumde OYUN_SURUMU sabitiyle BIRLIKTE guncelle.               */
+   isidir) ama dosyanin kimligi belli olur.                                    */
 1 VERSIONINFO
-FILEVERSION    1,1,0,0
-PRODUCTVERSION 1,1,0,0
+FILEVERSION    SURUM_ANA,SURUM_ALT,0,0
+PRODUCTVERSION SURUM_ANA,SURUM_ALT,0,0
 FILEFLAGSMASK  0x3fL
 FILEFLAGS      0x0L
 FILEOS         0x40004L   /* VOS_NT_WINDOWS32 */
@@ -33,13 +38,13 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "CompanyName",      "Borsa Patronu"
-            VALUE "FileDescription",  "Borsa Patronu - Turkce borsa yonetim simulasyonu"
-            VALUE "FileVersion",      "1.1.0.0"
+            VALUE "FileDescription",  "Borsa Patronu - borsa yonetim oyunu / stock market tycoon"
+            VALUE "FileVersion",      SURUM_DOSYA_METIN
             VALUE "InternalName",     "borsa_patronu"
             VALUE "LegalCopyright",   "(c) 2026 Borsa Patronu"
             VALUE "OriginalFilename", "borsa_patronu.exe"
             VALUE "ProductName",      "Borsa Patronu"
-            VALUE "ProductVersion",   "1.1.0.0"
+            VALUE "ProductVersion",   SURUM_DOSYA_METIN
         END
     END
     BLOCK "VarFileInfo"

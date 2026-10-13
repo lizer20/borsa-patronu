@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  Borsa Patronu - web surumunun sayfa kabugu (emscripten "shell file").
+  Tuval sayfanin (itch.io'da iframe'in) TAMAMINI kaplar; oyun kendi 1280x720
+  sahnesini bu alana en-boy oranini koruyarak olcekler. itch.io ayari:
+  "Embed in page", 1280 x 720, "Fullscreen button" acik.
+-->
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Borsa Patronu</title>
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #0e1117; overflow: hidden; }
+    canvas.emscripten { display: block; position: absolute; left: 0; top: 0; width: 100%; height: 100%; outline: none; }
+    #durum { position: absolute; left: 0; right: 0; top: 44%; text-align: center; color: #ffcb00;
+             font: 600 20px system-ui, sans-serif; letter-spacing: 1px; }
+    #hata { position: absolute; left: 10%; right: 10%; top: 54%; text-align: center; color: #ef476f;
+            font: 14px system-ui, sans-serif; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <div id="durum">Yükleniyor… / Loading…</div>
+  <div id="hata"></div>
+  <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
+  <script>
+    var Module = {
+      canvas: document.getElementById('canvas'),
+      setStatus: function (metin) {
+        if (!metin) document.getElementById('durum').style.display = 'none';
+      },
+      onRuntimeInitialized: function () {
+        document.getElementById('durum').style.display = 'none';
+      },
+      onAbort: function (neden) {
+        document.getElementById('durum').style.display = 'none';
+        document.getElementById('hata').textContent =
+          'Oyun baslatilamadi / The game could not start.\n' + (neden || '');
+      }
+    };
+    // Klavye kisayollari (Bosluk, 1-8, M) icin tuvalin odakta olmasi gerekir;
+    // iframe icinde ilk tiklamada odagi tuvale ver. Bosluk tusu sayfayi kaydirmasin.
+    window.addEventListener('mousedown', function () {
+      window.focus();
+      document.getElementById('canvas').focus();
+    });
+    window.addEventListener('keydown', function (e) {
+      if (e.code === 'Space') e.preventDefault();
+    });
+  </script>
+  {{{ SCRIPT }}}
+</body>
+</html>
