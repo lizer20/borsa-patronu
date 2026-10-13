@@ -210,6 +210,16 @@ static int YaziCizSarili(const string& metin, int x, int y, int boyut, int maxGe
     return (int)satirlar.size() * satirYuksekligi;
 }
 
+// Sarilmis ve her satiri yatayda ORTALANMIS yazi; kullanilan yuksekligi doner.
+static int YaziCizSariliOrtali(const string& metin, int merkezX, int y, int boyut, int maxGenislik, Color renk,
+                               int satirYuksekligi = 0) {
+    if (satirYuksekligi <= 0) satirYuksekligi = boyut + 4;
+    vector<string> satirlar = SatirlaraBol(metin, boyut, maxGenislik);
+    for (size_t i = 0; i < satirlar.size(); i++)
+        YaziCizOrtali(satirlar[i], merkezX, y + (int)i * satirYuksekligi, boyut, renk);
+    return (int)satirlar.size() * satirYuksekligi;
+}
+
 static int SariliYukseklik(const string& metin, int boyut, int maxGenislik, int maxSatir = 0,
                            int satirYuksekligi = 0) {
     if (satirYuksekligi <= 0) satirYuksekligi = boyut + 4;

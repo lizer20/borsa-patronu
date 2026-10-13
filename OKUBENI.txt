@@ -1,4 +1,4 @@
-BORSA PATRONU  -  v2.0
+BORSA PATRONU  -  v2.1
 ======================
 (English below)
 
@@ -16,21 +16,39 @@ NASIL OYNANIR
   yayarsan ucuzlar. Sürekli al-sat çevirmek para kaybettirir.
 - Rütbe atladıkça açılanlar:
     Deneyimli Yatırımcı : EMİR düğmesi (zarar kes, kâr al, limit alım)
-    Uzman Trader        : açığa satış (elinde olmayan hissede SAT'a bas)
+    Uzman Trader        : açığa satış (elinde olmayan hissede SAT'a bas),
+                          güvenli limanlar (altın ve dolar)
     Borsa Kaplanı       : kredi ve içeriden bilgi mektupları
+- Hisse kodunun yanındaki etiket değerlemeyi gösterir: PAHALI ve BALON
+  hisselerde düzeltme riski büyür, UCUZ ve KELEPİR hisselere iyi haber gelme
+  olasılığı artar. Oyunun başında hep MAKUL'dür; rütbe atladıkça önem kazanır.
+- Altın ve dolar kötü küresel haberlerde YÜKSELİR: büyümek için değil,
+  fırtınada korunmak içindir.
+- Grafiğin üstünde bir GÖREV durur; tamamlarsan nakit ödül alırsın. Süresi
+  dolarsa ceza yoktur, yenisi gelir.
 - Kredi ve açığa satışta teminat oranına dikkat: %40'ın altına inerse
   pozisyonların zorla kapatılır.
-- Bir şirkette 501/1000 hisseye ulaşırsan şirketi devralırsın.
+- Bir şirkette 501/1000 hisseye ulaşırsan şirketi devralırsın. Yönetim
+  kararlarında riskli seçenek bir KUMARDIR: tutarsa kazandırır, tutmazsa
+  kaybettirir. Üst üste risk aldıkça tutma şansı düşer; güvenli kararlar
+  şirketi toparlar. Şans, düğmenin üstünde yazar.
+- "Günün Piyasası" senaryosunda o gün herkes aynı piyasayı oynar; 30 gün
+  sonunda skorunu kopyalayıp paylaşabilirsin.
 - İlk oyunda kısa bir rehber çıkar; Ayarlar'dan kapatıp yeniden başlatabilirsin.
 
 Kısayollar: Boşluk / P duraklat, 1-8 işlem adedi, M ses, F12 ekran görüntüsü.
 Dil: ana menünün sağ üstünden ya da Ayarlar'dan (Türkçe / English).
+Ayarlar'da ayrıca: müzik aç/kapa ve renk körü modu (yeşil/kırmızı yerine
+mavi/turuncu).
+Pencereyi kenarından tutup istediğin boyuta getirebilirsin; oyun pencereye
+uyar (geniş pencerede grafik büyür).
 
 KAYIT
 -----
 Oyun, kaydını bu .exe'nin yanındaki "borsa_kayit.sav" dosyasına; başarımlarını
 ve rekorlarını "borsa_profil.sav" dosyasına yazar. Oyunu taşırsan bu iki
-dosyayı da yanına alman yeterli. Eski sürümlerin kayıtları açılır.
+dosyayı da yanına alman yeterli. Eski sürümlerin kayıtları açılır (altın ve
+dolar başlangıç fiyatından, görevler baştan başlar).
 
 ÇALIŞTIRMA / GÜVENLİK UYARISI
 -----------------------------
@@ -48,7 +66,7 @@ uydurmadır. Yatırım tavsiyesi değildir.
 
 
 ==============================================================================
-BORSA PATRONU  -  v2.0   (English)
+BORSA PATRONU  -  v2.1   (English)
 ==============================================================================
 
 A stock market tycoon game: build a market empire from a small stake. Trade
@@ -66,22 +84,40 @@ HOW TO PLAY
   an order over time makes it cheaper. Churning trades loses money.
 - Ranking up unlocks:
     Seasoned Investor : the ORDER button (stop-loss, take profit, limit buy)
-    Expert Trader     : short selling (press SELL on a stock you do not hold)
+    Expert Trader     : short selling (press SELL on a stock you do not hold),
+                        safe havens (gold and dollars)
     Market Tiger      : credit and insider letters
+- The tag next to a ticker shows its valuation: PRICEY and BUBBLE stocks risk
+  a correction, CHEAP and BARGAIN stocks are likelier to get good news. It is
+  FAIR at the start of the game and matters more as you climb.
+- Gold and dollars RISE on bad global news: they are there for shelter in a
+  storm, not for growth.
+- A MISSION sits above the chart; complete it for a cash reward. If it
+  expires there is no penalty and a new one arrives.
 - With credit or shorts, watch your margin ratio: below 40% your positions
   are force-closed.
-- Reach 501/1000 shares of a company to take it over.
+- Reach 501/1000 shares of a company to take it over. In management
+  decisions the risky option is a GAMBLE: it pays if it works and costs you
+  if it does not. Each gamble makes the next one less likely to pay off; safe
+  choices let the company recover. The odds are written on the button.
+- In the "Daily Market" scenario everyone plays the same market that day;
+  after 30 days you can copy your score and share it.
 - A short guide appears in your first game; you can turn it off or restart it
   in Settings.
 
 Shortcuts: Space / P pause, 1-8 trade size, M sound, F12 screenshot.
 Language: top right of the main menu, or in Settings (Türkçe / English).
+Also in Settings: music on/off and a colorblind mode (blue/orange instead of
+green/red).
+You can drag the window edge to any size; the game adapts (a wider window
+gives the chart more room).
 
 SAVES
 -----
 The game writes its save to "borsa_kayit.sav" and your achievements and
 records to "borsa_profil.sav", both next to this .exe. If you move the game,
-take those two files along.
+take those two files along. Saves from older versions still load (gold and
+dollars start at their opening price, missions start fresh).
 
 RUNNING / SECURITY WARNING
 --------------------------

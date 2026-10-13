@@ -77,6 +77,39 @@ static const vector<SirketBilgi> SIRKETLER = {
 };
 
 // ============================================================================
+// GUVENLI LIMAN VARLIKLARI (v2.1) - altin ve dolar
+// ============================================================================
+// Hisse DEGILLER: haberleri, bilancolari, temettuleri yok; devralinamaz, aciga
+// satilamazlar. Onemli olan tek ozellikleri: piyasayla TERS yonde hareket
+// ederler. Kotu bir kuresel haberde hisseler duserken bunlar yukselir.
+//   beta               : piyasa faktorune duyarlilik (EKSI = ters yon)
+//   kureselDuyarlilik  : kuresel olay etkisinin carpani (EKSI = ters yon)
+//   kaliciPay          : kuresel etkinin KALICI olan kismi; kalani panik gecince
+//                        geri verilir (gercekteki "guvenli limana kacis" sicramasi)
+//   likidite           : islem maliyeti olcegi (hisselerde 1000). Buyuk = derin piyasa.
+//   gunlukSuruklenme   : gunluk ortalama deger artisi (uzun vadede yavasca yukselirler)
+// Kazanci hisselerden dusuktur; islevleri KORUMAKTIR.
+struct LimanBilgi {
+    const char* kod;
+    IkiDil tamAd;
+    Color renk;
+    float baslangicFiyat;
+    float beta;
+    float kureselDuyarlilik;
+    float kaliciPay;
+    float ozelOlcek;
+    float volCarpani;
+    int likidite;
+    int azamiAdet;
+    float gunlukSuruklenme;
+};
+
+static const vector<LimanBilgi> LIMANLAR = {
+    {"ALTIN", {"Gram Altın", "Gold (gram)"}, {255, 215, 64, 255}, 3000.0f, -0.20f, -0.55f, 0.5f, 0.30f, 0.5f, 400, 2000, 0.0008f},
+    {"DOLAR", {"ABD Doları", "US Dollar"}, {120, 220, 150, 255}, 40.0f, -0.35f, -0.80f, 0.5f, 0.25f, 0.4f, 30000, 100000, 0.0010f},
+};
+
+// ============================================================================
 // YONETIM KARARLARI (bir sirketi DEVRALDIKTAN sonra periyodik olarak gelir)
 // ============================================================================
 struct YonetimSecenek {
@@ -84,6 +117,7 @@ struct YonetimSecenek {
     float temelDegerCarpani; // fiyata VE adil degere uygulanan aninda etki
     float riskPrimiDegisimi; // hissenin KALICI oynaklik tabanina eklenen/cikan miktar
     IkiDil logMetni;         // haber bandina yazilacak sonuc ("ASELS YONETIM KARARI: " + bu)
+    IkiDil basarisizMetni;   // (yalnizca riskli secenek) kumar TUTMAZSA haber bandina yazilan
 };
 
 struct YonetimOlaySablonu {
@@ -99,7 +133,9 @@ static const vector<YonetimOlaySablonu> YONETIM_OLAYLARI = {
         {"Giderleri kısmak için bir karar vermen gerekiyor.", "You need to decide how to cut costs."},
         {{"Yarısını İşten Çıkar", "Lay Off Half"}, 1.15f, 0.012f,
          {"çalışanların yarısını işten çıkardı! Kârlar arttı ama moral çökmüş durumda.",
-          "laid off half its staff! Profits are up but morale has collapsed."}},
+          "laid off half its staff! Profits are up but morale has collapsed."},
+         {"çalışanların yarısını işten çıkardı ama üretim aksadı; siparişler yetişmiyor!",
+          "laid off half its staff, but production stalled and orders are slipping!"}},
         {{"Kadroyu Koru", "Keep the Team"}, 1.02f, 0.0f,
          {"kadroyu korudu; tasarruf sınırlı ama ekip motive.",
           "kept its team; savings are limited but the staff is motivated."}},
@@ -109,7 +145,9 @@ static const vector<YonetimOlaySablonu> YONETIM_OLAYLARI = {
         {"Şirket için yeni bir büyüme fırsatı çıktı.", "A new growth opportunity has come up."},
         {{"Agresif Genişleme", "Aggressive Expansion"}, 1.18f, 0.015f,
          {"agresif bir genişlemeye gitti! Büyüme hızlandı ama borç riski arttı.",
-          "went for aggressive expansion! Growth sped up but debt risk increased."}},
+          "went for aggressive expansion! Growth sped up but debt risk increased."},
+         {"agresif genişlemeye gitti ama yeni tesisler zarar yazdı; borç yükü ağırlaştı!",
+          "went for aggressive expansion, but the new plants are losing money and debt is piling up!"}},
         {{"Temkinli Büyüme", "Cautious Growth"}, 1.04f, 0.0f,
          {"temkinli bir büyüme seçti; istikrarlı ama yavaş ilerliyor.",
           "chose cautious growth; steady but slow."}},
@@ -119,7 +157,9 @@ static const vector<YonetimOlaySablonu> YONETIM_OLAYLARI = {
         {"İç denetimde küçük bir usulsüzlük riski tespit edildi.", "Internal audit found a small risk of irregularity."},
         {{"Örtbas Et", "Cover It Up"}, 1.10f, 0.02f,
          {"raporu örtbas etti. Kısa vadede rahatladı ama skandal riski tavan yaptı!",
-          "buried the report. Short-term relief, but scandal risk has peaked!"}},
+          "buried the report. Short-term relief, but scandal risk has peaked!"},
+         {"raporu örtbas etti ama belge basına sızdı - skandal patladı!",
+          "buried the report, but it leaked to the press - a scandal has erupted!"}},
         {{"Şeffaf Ol ve Düzelt", "Come Clean and Fix It"}, 0.98f, -0.004f,
          {"şeffaflığı seçti; küçük bir maliyeti oldu ama güven arttı.",
           "chose transparency; a small cost, but trust has grown."}},
@@ -129,7 +169,9 @@ static const vector<YonetimOlaySablonu> YONETIM_OLAYLARI = {
         {"Çalışanlar zam talep ediyor.", "Employees are asking for a raise."},
         {{"Talebi Reddet", "Reject the Demand"}, 1.08f, 0.01f,
          {"zam talebini reddetti. Tasarruf sağladı ama grev riski doğdu.",
-          "rejected the raise. Money saved, but strike risk has emerged."}},
+          "rejected the raise. Money saved, but strike risk has emerged."},
+         {"zam talebini reddetti; çalışanlar greve gitti, üretim durdu!",
+          "rejected the raise; the workers went on strike and production has stopped!"}},
         {{"Zam Ver", "Give the Raise"}, 0.97f, -0.003f,
          {"çalışanlara zam verdi; maliyetli oldu ama moral yerinde.",
           "gave employees a raise; costly, but morale is high."}},
@@ -139,7 +181,9 @@ static const vector<YonetimOlaySablonu> YONETIM_OLAYLARI = {
         {"Yeni ürün hazır ama testleri tamamlanmadı.", "The new product is ready, but testing is not finished."},
         {{"Hemen Piyasaya Sür", "Launch Now"}, 1.14f, 0.014f,
          {"ürünü testleri bitmeden piyasaya sürdü! Satışlar patladı ama geri çağırma riski var.",
-          "rushed the product to market! Sales jumped, but recall risk looms."}},
+          "rushed the product to market! Sales jumped, but recall risk looms."},
+         {"ürünü testleri bitmeden piyasaya sürdü; arızalar çıktı, ürün geri çağrılıyor!",
+          "rushed the product to market; faults surfaced and it is being recalled!"}},
         {{"Testleri Tamamla", "Finish Testing"}, 1.03f, 0.0f,
          {"testleri tamamlamayı seçti; lansman gecikti ama ürün sağlam.",
           "chose to finish testing; the launch slipped but the product is solid."}},
@@ -149,7 +193,9 @@ static const vector<YonetimOlaySablonu> YONETIM_OLAYLARI = {
         {"Mali işler agresif bir vergi planı öneriyor.", "Finance is proposing an aggressive tax scheme."},
         {{"Agresif Planı Uygula", "Use the Aggressive Plan"}, 1.09f, 0.012f,
          {"agresif vergi planını uyguladı. Kâr arttı ama ceza riski büyüdü.",
-          "used the aggressive tax plan. Profit rose, but penalty risk grew."}},
+          "used the aggressive tax plan. Profit rose, but penalty risk grew."},
+         {"agresif vergi planını uyguladı; denetime takıldı ve ağır ceza yedi!",
+          "used the aggressive tax plan; it was audited and hit with a heavy fine!"}},
         {{"Kurallara Uy", "Play It Safe"}, 1.00f, -0.002f,
          {"kurallara uydu; kazanç yok ama başı ağrımayacak.",
           "played by the rules; no gain, but no trouble ahead."}},
@@ -220,7 +266,7 @@ static const vector<KureselOlaySablonu> KURESEL_OLAYLARI = {
 // ============================================================================
 // SIRA DEGISMEMELI: profil dosyasinda rekorlar bu indekslerle tutulur. Yeni
 // senaryo eklerken SONA ekle.
-enum SenaryoId { S_KLASIK = 0, S_KRIZ, S_ZAMAN, S_SIFIR, SENARYO_SAYISI };
+enum SenaryoId { S_KLASIK = 0, S_KRIZ, S_ZAMAN, S_SIFIR, S_GUNLUK, SENARYO_SAYISI };
 
 struct Senaryo {
     IkiDil ad;
@@ -232,6 +278,9 @@ struct Senaryo {
     bool acemiKorumasi;           // false: iyi/kotu haber orani en bastan "son rutbe" dengesinde
     int gunSiniri;                // 0 = sinir yok; >0 = bu kadar gun sonunda skor = net deger
     Color renk;
+    // true: piyasa GUNUN TARIHIYLE tohumlanir - o gun oynayan herkes ayni kuresel
+    // olaylari, ayni piyasa modunu ve ayni bilanco sonuclarini gorur.
+    bool gunluk = false;
 };
 
 static const Senaryo SENARYOLAR[SENARYO_SAYISI] = {
@@ -255,6 +304,11 @@ static const Senaryo SENARYOLAR[SENARYO_SAYISI] = {
       "You have just 2,500 TL. Every lira and every trading cost matters."},
      {"Hedef: Efsane Yatırımcı ol", "Goal: become a Legendary Investor"},
      2500.0f, 0.0f, 0.0f, true, 0, {17, 138, 178, 255}},
+    {{"Günün Piyasası", "Daily Market"},
+     {"Bugün herkes aynı piyasayı oynuyor: aynı küresel olaylar, aynı piyasa havası. 30 günün var; skorunu paylaş.",
+      "Today everyone plays the same market: same global events, same market mood. You have 30 days; share your score."},
+     {"Hedef: 30 günde en yüksek net değer", "Goal: highest net worth in 30 days"},
+     10000.0f, 0.0f, 0.0f, true, 30, {186, 130, 240, 255}, true},
 };
 
 // ============================================================================
@@ -263,7 +317,8 @@ static const Senaryo SENARYOLAR[SENARYO_SAYISI] = {
 // SIRA DEGISMEMELI (profil dosyasi bu indeksleri kullanir). Yeni basarim SONA.
 enum BasarimId {
     B_ILK_ISLEM = 0, B_KAR_1K, B_KAR_25K, B_PATRON, B_HOLDING, B_TEKEL, B_AYI, B_EMIR,
-    B_ZARF, B_KALDIRAC, B_TEMETTU, B_DONUS, B_EFSANE, B_HIZLI, B_KRIZ, BASARIM_SAYISI
+    B_ZARF, B_KALDIRAC, B_TEMETTU, B_DONUS, B_EFSANE, B_HIZLI, B_KRIZ,
+    B_GOREV, B_LIMAN, B_GUNLUK, BASARIM_SAYISI
 };
 
 // "Hiz Rekoru" basarimi: Klasik senaryoda bu kadar gunden KISA surede zirve.
@@ -293,12 +348,15 @@ static const BasarimBilgi BASARIMLAR[BASARIM_SAYISI] = {
     {{"Efsane", "Legend"}, {"Efsane Yatırımcı rütbesine ulaş.", "Reach the Legendary Investor rank."}},
     {{"Hız Rekoru", "Speedrun"}, {"Klasik senaryoda 100 günden kısa sürede zirveye çık.", "Reach the top in under 100 days in Classic."}},
     {{"Kriz Fırsatçısı", "Crisis Profiteer"}, {"Kriz Yılı senaryosunda zirveye çık.", "Reach the top in the Crisis Year scenario."}},
+    {{"Görev Adamı", "Mission Minded"}, {"10 görev tamamla.", "Complete 10 missions."}},
+    {{"Güvenli Liman", "Safe Haven"}, {"Kötü bir küresel haber yansırken altın ya da dolar tutuyor ol.", "Hold gold or dollars when bad global news hits."}},
+    {{"Günün Yatırımcısı", "Trader of the Day"}, {"Günün Piyasası senaryosunu bitir.", "Finish the Daily Market scenario."}},
 };
 
 // ============================================================================
 // REHBER (ilk oyunun ilk dakikalari)
 // ============================================================================
-enum class RehberHedef { AL_BUTONU, HABER_BANDI, KART, RUTBE_CUBUGU, ADET_PANELI, YOK };
+enum class RehberHedef { AL_BUTONU, HABER_BANDI, KART, ETIKET, RUTBE_CUBUGU, ADET_PANELI, YOK };
 
 struct RehberAdimi {
     IkiDil metin;
@@ -306,17 +364,23 @@ struct RehberAdimi {
 };
 
 static const vector<RehberAdimi> REHBER_ADIMLARI = {
-    {{"Bu ilk hissen. Soldaki AL düğmesine basıp birkaç adet al - fiyat yükselirse kazanırsın.",
-      "This is your first stock. Press BUY on the left to pick up a few shares - you profit if the price rises."},
+    // (Metinlerde "soldaki / sag alttaki" gibi YON sozcukleri yok: yatay ve dikey
+    // yerlesimde ayni sey farkli yerde durur. Neresi oldugunu kutudan hedefe
+    // uzanan cizgi ve hedefin cercevesi gosterir.)
+    {{"Bu ilk hissen. İşaretli AL düğmesine basıp birkaç adet al - fiyat yükselirse kazanırsın.",
+      "This is your first stock. Press the highlighted BUY button to pick up a few shares - you profit if the price rises."},
      RehberHedef::AL_BUTONU},
     {{"Üstteki haber bandını izle. SON DAKİKA haberi çıktıktan 5 saniye sonra fiyata yansır. Haber iyi mi, kötü mü? Okuyup karar vermek sana kalmış.",
       "Watch the news ticker above. BREAKING news hits the price 5 seconds after it appears. Good or bad? You have to read it and decide."},
      RehberHedef::HABER_BANDI},
-    {{"Kartın sağ altındaki yeşil/kırmızı rakam o pozisyondaki kâr/zararın. Kârdayken SAT'a basarak kazancını nakde çevir.",
-      "The green/red number at the bottom right of the card is your profit/loss on that position. Press SELL while in profit to cash out."},
+    {{"Karttaki yeşil/kırmızı yüzde o pozisyondaki kâr/zararın. Kârdayken SAT'a basarak kazancını nakde çevir.",
+      "The green/red percentage on the card is your profit/loss on that position. Press SELL while in profit to cash out."},
      RehberHedef::KART},
-    {{"Sol üstteki çubuk bir sonraki rütbeye ne kadar kaldığını gösterir. Her rütbe yeni bir hisse ve yeni araçlar (emirler, açığa satış, kredi) açar.",
-      "The bar at the top left shows how far the next rank is. Each rank unlocks a new stock and new tools (orders, short selling, credit)."},
+    {{"Hisse kodunun yanındaki etiket değerlemeyi gösterir. PAHALI ve BALON hisselerde düzeltme riski büyür; UCUZ ve KELEPİR hisselere iyi haber gelme olasılığı artar. İleri rütbelerde önem kazanır.",
+      "The tag next to the ticker shows valuation. PRICEY and BUBBLE stocks risk a correction; CHEAP and BARGAIN stocks are likelier to get good news. It matters more at higher ranks."},
+     RehberHedef::ETIKET},
+    {{"Üstteki sarı çubuk bir sonraki rütbeye ne kadar kaldığını gösterir. Her rütbe yeni bir hisse ve yeni araçlar (emirler, açığa satış, kredi) açar.",
+      "The yellow bar at the top shows how far the next rank is. Each rank unlocks a new stock and new tools (orders, short selling, credit)."},
      RehberHedef::RUTBE_CUBUGU},
     {{"Kaç adet işlem yapacağını buradan seç. Büyük ve aceleci emirler pahalıdır: 'maliyet' yüzdesine bak. Emri zamana yayarsan ucuzlar.",
       "Pick your trade size here. Large, rushed orders are expensive: watch the 'cost' percentage. Spreading an order over time makes it cheaper."},

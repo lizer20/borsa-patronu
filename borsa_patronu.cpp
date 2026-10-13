@@ -17,6 +17,7 @@
  *    src/veri.h             ICERIK tablolari (sirket, haber, olay, senaryo...)
  *    src/oyun.h             oyun durumu (veri yapilari)
  *    src/profil.h           basarimlar, rekorlar, dil tercihi
+ *    src/gorev.h            gorevler (kisa hedefler ve odulleri)
  *    src/piyasa_islem.h     alim/satim ve islem maliyeti (mikroyapi)
  *    src/piyasa_kaldirac.h  emirler, kredi, teminat cagrisi, iflas
  *    src/piyasa_olay.h      fiyat simulasyonu, haberler, bilanco, rutbe
@@ -25,6 +26,7 @@
  *    src/arayuz_temel.h     arayuz veri yapilari ve sabit YERLESIM
  *    src/arayuz_oyun.h      ust bar, haber bandi, hisse kartlari, adet paneli
  *    src/arayuz_grafik.h    ana grafik, rehber katmani, oyun alani girdisi
+ *    src/arayuz_dikey.h     DIKEY (telefon) oyun ekrani
  *    src/arayuz_pencere*.h  pencereler (duraklatma, ayarlar, emir, kredi...)
  *    src/arayuz_menu.h      ana menu, senaryo secimi, basarimlar
  *    src/uygulama.h         pencere, girdi ve kare dongusu
@@ -44,6 +46,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -65,6 +68,7 @@ using namespace std;
 #include "src/veri.h"
 #include "src/oyun.h"
 #include "src/profil.h"
+#include "src/gorev.h"
 #include "src/piyasa_islem.h"
 #include "src/piyasa_kaldirac.h"
 #include "src/piyasa_olay.h"
@@ -76,6 +80,7 @@ using namespace std;
 #include "src/arayuz_temel.h"
 #include "src/arayuz_oyun.h"
 #include "src/arayuz_grafik.h"
+#include "src/arayuz_dikey.h"
 #include "src/arayuz_pencere.h"
 #include "src/arayuz_pencere2.h"
 #include "src/arayuz_menu.h"

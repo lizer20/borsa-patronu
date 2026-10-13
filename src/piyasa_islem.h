@@ -32,17 +32,19 @@ static float AcemiKorumasi(const Oyun& o) {
 // MIKROYAPI: akis tabanli islem maliyeti (ayrintili aciklama temel.h icinde)
 // ---------------------------------------------------------------------------
 // f(Q): Q adetlik net akisin yarattigi anlik baski (isaretli oran).
-static float EtkiEgrisi(float q) {
+// likidite: piyasanin derinligi (hisselerde 1000; altin/dolar gibi derin
+// piyasalarda daha buyuk, yani ayni adet daha az baski yaratir).
+static float EtkiEgrisi(float q, int likidite = TOPLAM_HISSE_SAYISI) {
     float a = fabsf(q);
     if (a <= 0.0f) return 0.0f;
-    float v = ETKI_OLCEK * sqrtf(a / (float)TOPLAM_HISSE_SAYISI);
+    float v = ETKI_OLCEK * sqrtf(a / (float)max(1, likidite));
     return (q >= 0.0f) ? v : -v;
 }
 
 // F(Q) = integral(0..Q) f = (2/3) * ETKI_OLCEK * |Q|^1.5 / sqrt(N). Cift fonksiyon.
-static float EtkiIntegrali(float q) {
+static float EtkiIntegrali(float q, int likidite = TOPLAM_HISSE_SAYISI) {
     float a = fabsf(q);
-    return (2.0f / 3.0f) * ETKI_OLCEK * a * sqrtf(a / (float)TOPLAM_HISSE_SAYISI);
+    return (2.0f / 3.0f) * ETKI_OLCEK * a * sqrtf(a / (float)max(1, likidite));
 }
 
 // Bu emrin GERCEKTEN gerceklesecegi birim fiyat: piyasa fiyati x (1 + emrin
@@ -50,7 +52,7 @@ static float EtkiIntegrali(float q) {
 static float DolumFiyati(const Hisse& h, int adet, bool alim) {
     if (adet <= 0) return h.fiyat;
     float d = alim ? (float)adet : -(float)adet;
-    float ortBaski = (EtkiIntegrali(h.akis + d) - EtkiIntegrali(h.akis)) / d;
+    float ortBaski = (EtkiIntegrali(h.akis + d, h.likidite) - EtkiIntegrali(h.akis, h.likidite)) / d;
     float sapma = ortBaski + (alim ? 0.5f : -0.5f) * ALIM_SATIM_SPREAD;
     return fmaxf(0.01f, h.fiyat * (1.0f + sapma));
 }
@@ -77,10 +79,11 @@ static int MaksAlinabilir(const Hisse& h, float nakit) {
 // ---------------------------------------------------------------------------
 static void DevralmaKontrolEt(Oyun& o, int idx) {
     Hisse& h = o.hisseler[idx];
+    if (h.liman) return; // altin/dolar devralinamaz
     bool coguldaMi = (h.adet * 2 > TOPLAM_HISSE_SAYISI);
     if (coguldaMi && !h.sahibiyim) {
         h.sahibiyim = true;
-        h.yonetimOlayZamanlayici = RastgeleAralik(YONETIM_OLAY_MIN_SN, YONETIM_OLAY_MAX_SN);
+        h.yonetimOlayZamanlayici = YONETIM_OLAY_MIN_SN + (YONETIM_OLAY_MAX_SN - YONETIM_OLAY_MIN_SN) * g_rngOyuncu.Birim();
         o.toastlar.Ekle(M("ŞİRKETİ DEVRALDIN!", "COMPANY TAKEN OVER!"),
                         h.kod + M(" artık senin kontrolünde.", " is now under your control."), RENK_ALTIN, 6.0f);
         HaberBandinaEkle(o, string(M("DEVİR ALINDI: ", "TAKEOVER: ")) + to_string(h.adet) + "/" +
@@ -92,7 +95,8 @@ static void DevralmaKontrolEt(Oyun& o, int idx) {
         BasarimVer(o, B_PATRON);
         int n = o.SahipOlunanSirketSayisi();
         if (n >= 3) BasarimVer(o, B_HOLDING);
-        if (n >= (int)o.hisseler.size()) BasarimVer(o, B_TEKEL);
+        if (n >= HisseSayisi()) BasarimVer(o, B_TEKEL);
+        GorevOlay(o, G_DEVRAL);
     } else if (!coguldaMi && h.sahibiyim) {
         h.sahibiyim = false;
         o.toastlar.Ekle(M("KONTROLÜ KAYBETTİN", "CONTROL LOST"),
@@ -126,10 +130,10 @@ static int IslemAdedi(const Oyun& o, const Hisse& h, bool alim) {
             return min(acik, MaksAlinabilir(h, o.bakiye));
         }
         if (sec > 0) return sec;
-        return max(0, min(MaksAlinabilir(h, o.bakiye), TOPLAM_HISSE_SAYISI - h.adet));
+        return max(0, min(MaksAlinabilir(h, o.bakiye), h.azamiAdet - h.adet));
     }
     if (h.adet > 0) return (sec > 0) ? sec : h.adet; // uzun satis
-    if (!o.AcigaSatisAcik()) return 0;
+    if (h.liman || !o.AcigaSatisAcik()) return 0;
     if (sec > 0) return sec; // aciga satis (sinirlari IslemYap denetler)
     if (h.fiyat <= 0.01f) return 0;
     int kapasite = ACIGA_HISSE_SINIRI + h.adet; // h.adet <= 0
@@ -159,10 +163,12 @@ static IslemSonucu IslemYap(Oyun& o, int idx, bool alim, int adet, IslemKaynagi 
 
     if (alim && h.adet >= 0) {
         // ---------------- UZUN ALIM ----------------
-        if (h.adet + adet > TOPLAM_HISSE_SAYISI)
-            return hata(M("Hisse Kalmadı", "No Shares Left"),
-                        h.kod + M(": şirketin toplam ", ": the company has only ") + to_string(TOPLAM_HISSE_SAYISI) +
-                            M(" hissesi var.", " shares."));
+        if (h.adet + adet > h.azamiAdet)
+            return hata(M("Sınıra Ulaşıldı", "Limit Reached"),
+                        h.liman ? h.kod + M(": en fazla ", ": you can hold at most ") + to_string(h.azamiAdet) +
+                                      M(" adet tutabilirsin.", " units.")
+                                : h.kod + M(": şirketin toplam ", ": the company has only ") + to_string(h.azamiAdet) +
+                                      M(" hissesi var.", " shares."));
         dolum = DolumFiyati(h, adet, true);
         float toplam = dolum * (float)adet;
         if (toplam > o.bakiye + 0.005f)
@@ -175,6 +181,10 @@ static IslemSonucu IslemYap(Oyun& o, int idx, bool alim, int adet, IslemKaynagi 
         HaberBandinaEkle(o, onEk + M("ALIM: ", "BUY: ") + to_string(adet) + M(" adet ", " ") + h.kod + " @ " +
                                  Para(dolum) + " (" + M("maliyet ", "cost ") + Yuzde(maliyetYuzde, 2) + ")");
         if (oyuncu) Cal(o.sesler.alim);
+        // Bu hisse icin duyurulmus, henuz yansimamis haber varsa "haberden sonra aldi" diye isaretle.
+        for (auto& bh : o.bekleyenHaberler)
+            if (bh.hisseIndex == idx) bh.oyuncuAldi = true;
+        if (!h.liman && DegerlemeSeviyesi(h) <= 1) GorevOlay(o, G_UCUZ_AL);
     } else if (alim) {
         // ---------------- ACIK KAPATMA ----------------
         int acik = -h.adet;
@@ -202,6 +212,7 @@ static IslemSonucu IslemYap(Oyun& o, int idx, bool alim, int adet, IslemKaynagi 
                                  " @ " + Para(dolum) + " (" + ParaIsaretli(kar) + ")");
         if (oyuncu) Cal(kar >= 0 ? o.sesler.satimKar : o.sesler.satimZarar);
         if (kar >= 1000.0f) BasarimVer(o, B_AYI);
+        if (kar > 0.0f) GorevOlay(o, G_ACIGA);
     } else if (h.adet > 0) {
         // ---------------- UZUN SATIS ----------------
         if (adet > h.adet) {
@@ -227,9 +238,11 @@ static IslemSonucu IslemYap(Oyun& o, int idx, bool alim, int adet, IslemKaynagi 
         if (oyuncu) Cal(kar >= 0 ? o.sesler.satimKar : o.sesler.satimZarar);
         if (kar >= 1000.0f) BasarimVer(o, B_KAR_1K);
         if (kar >= 25000.0f) BasarimVer(o, B_KAR_25K);
+        GorevOlay(o, G_KAR_ET, kar);
+        if (kar > 0.0f && !h.liman && DegerlemeSeviyesi(h) >= 3) GorevOlay(o, G_PAHALI_SAT);
     } else {
         // ---------------- ACIGA SATIS ----------------
-        if (!o.AcigaSatisAcik())
+        if (h.liman || !o.AcigaSatisAcik())
             return hata(M("Yetersiz Hisse", "No Shares"),
                         M("Elinde hiç ", "You do not hold any ") + h.kod + M(" yok.", "."));
         if (-h.adet + adet > ACIGA_HISSE_SINIRI)
@@ -293,7 +306,7 @@ static bool HisseSat(Oyun& o, int idx) {
     Hisse& h = o.hisseler[idx];
     int adet = IslemAdedi(o, h, false);
     if (adet <= 0) {
-        if (h.adet <= 0 && o.AcigaSatisAcik())
+        if (h.adet <= 0 && o.AcigaSatisAcik() && !h.liman)
             o.toastlar.Ekle(M("Teminat Yetersiz", "Not Enough Margin"),
                             M("Açığa satış için kapasiten kalmadı.", "No capacity left for short selling."),
                             RENK_KIRMIZI, 3.0f);

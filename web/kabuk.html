@@ -1,14 +1,15 @@
 <!doctype html>
 <!--
   Borsa Patronu - web surumunun sayfa kabugu (emscripten "shell file").
-  Tuval sayfanin (itch.io'da iframe'in) TAMAMINI kaplar; oyun kendi 1280x720
-  sahnesini bu alana en-boy oranini koruyarak olcekler. itch.io ayari:
-  "Embed in page", 1280 x 720, "Fullscreen button" acik.
+  Tuval sayfanin (itch.io'da iframe'in) TAMAMINI kaplar; oyun sahnesinin boyutunu
+  bu alanin en-boy oranina gore secer (genis pencerede genis sahne, telefonda dikey
+  yerlesim), yani yanlarda bosluk kalmaz. itch.io ayari: "Embed in page",
+  1280 x 720, "Fullscreen button" ve "Mobile friendly" acik.
 -->
 <html lang="tr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Borsa Patronu</title>
   <meta name="description" content="Borsa Patronu - tarayıcıda oynanan borsa yönetim oyunu. A stock market tycoon game you can play in your browser.">
   <meta property="og:type" content="website">
@@ -17,8 +18,15 @@
   <meta property="og:image" content="https://emrebiltekin.me/borsa-patronu/kapak.png">
   <link rel="icon" href="favicon.ico">
   <style>
-    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #0e1117; overflow: hidden; }
-    canvas.emscripten { display: block; position: absolute; left: 0; top: 0; width: 100%; height: 100%; outline: none; }
+    /* Telefon: sayfa kaymasin, yakinlasmasin, metin secilmesin; dokunuslar oyuna gitsin. */
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #0e1117; overflow: hidden;
+                 overscroll-behavior: none; -webkit-user-select: none; user-select: none;
+                 -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+    /* 100dvh: telefonda adres cubugu gorunup kaybolunca tuval gorunen alani izler
+       (desteklemeyen tarayici bir ustteki 100vh satirini kullanir). Tuvalin piksel
+       boyutu bu kutudan okunur (bkz. platform.h, js_tuval_hedef_boyutu). */
+    canvas.emscripten { display: block; position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; height: 100dvh;
+                        outline: none; touch-action: none; }
     #durum { position: absolute; left: 0; right: 0; top: 44%; text-align: center; color: #ffcb00;
              font: 600 20px system-ui, sans-serif; letter-spacing: 1px; }
     #hata { position: absolute; left: 10%; right: 10%; top: 54%; text-align: center; color: #ef476f;

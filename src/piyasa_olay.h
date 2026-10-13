@@ -1,7 +1,11 @@
 // ============================================================================
-// piyasa_olay.h - fiyat simulasyonu, haberler, kuresel olaylar, bilanco,
-//                 iceriden bilgi, rutbe ilerlemesi ve SimulasyonAdimi()
+// piyasa_olay.h - fiyat simulasyonu, haberler, degerleme, kuresel olaylar,
+//                 bilanco, iceriden bilgi ve rutbe ilerlemesi
 // ============================================================================
+// RASTGELELIK KURALI: bu dosyadaki ortam olaylari g_rngPiyasa'dan, oyuncunun
+// durumundan BAGIMSIZ sayida cekim yapar (kilitli hisse icin bile zar atilir,
+// sonucu kullanilmaz). Boylece ayni tohumla baslayan iki oyuncu - rutbeleri
+// farkli olsa da - ayni kuresel olaylari ve ayni piyasa modunu gorur.
 
 static void RutbeVeHedefKontrolEt(Oyun& o) {
     float net = o.NetDeger();
@@ -30,7 +34,8 @@ static void RutbeVeHedefKontrolEt(Oyun& o) {
 
     // Bu rutbe atlayisinda acilan yeni hisse(ler) (birden fazla rutbe birden
     // atlanirsa aradaki hepsi tek seferde acilir).
-    for (auto& h : o.hisseler) {
+    for (int i = 0; i < HisseSayisi(); i++) {
+        Hisse& h = o.hisseler[i];
         if (h.acilmaSeviyesi > eskiRutbe && h.acilmaSeviyesi <= yeniRutbe) {
             o.toastlar.Ekle(M("YENİ HİSSE AÇILDI!", "NEW STOCK UNLOCKED!"), h.kod + " - " + h.tamAd.al(), h.renk, 5.0f);
             HaberBandinaEkle(o, string(M("YENİ HİSSE: ", "NEW STOCK: ")) + h.kod + " (" + h.tamAd.al() +
@@ -42,8 +47,8 @@ static void RutbeVeHedefKontrolEt(Oyun& o) {
     for (int r = eskiRutbe + 1; r <= yeniRutbe; r++) {
         if (r == EMIR_MIN_RUTBE) {
             o.toastlar.Ekle(M("YENİ ARAÇ: EMİRLER", "NEW TOOL: ORDERS"),
-                            M("Kartlardaki EMİR düğmesiyle zarar kes, kâr al ve limit emri ver.",
-                              "Use the ORDER button on cards for stop-loss, target and limit orders."),
+                            M("EMİR düğmesiyle zarar kes, kâr al ve limit emri ver.",
+                              "Use the ORDER button for stop-loss, target and limit orders."),
                             RENK_MAVI_VURGU, 8.0f);
             HaberBandinaEkle(o, M("YENİ ARAÇ: Bekleyen emirler açıldı - sen ekrana bakmazken de pozisyonun korunur.",
                                   "NEW TOOL: Pending orders unlocked - your position stays protected while you look away."));
@@ -56,10 +61,18 @@ static void RutbeVeHedefKontrolEt(Oyun& o) {
             HaberBandinaEkle(o, M("YENİ ARAÇ: Açığa satış açıldı - kötü haberden de kazanabilirsin (zarar sınırsızdır, dikkat).",
                                   "NEW TOOL: Short selling unlocked - profit from bad news too (losses are unlimited, careful)."));
         }
+        if (r == LIMAN_MIN_RUTBE) {
+            o.toastlar.Ekle(M("YENİ VARLIK: ALTIN ve DOLAR", "NEW ASSETS: GOLD and DOLLAR"),
+                            M("Piyasa düşerken yükselirler; kötü günde sığınak.",
+                              "They rise when the market falls; shelter on a bad day."),
+                            RENK_MAVI_VURGU, 8.0f);
+            HaberBandinaEkle(o, M("GÜVENLİ LİMAN: Altın ve dolar açıldı - kötü küresel haberlerde hisselerin tersine hareket ederler.",
+                                  "SAFE HAVENS: Gold and the dollar are unlocked - on bad global news they move against stocks."));
+        }
         if (r == KREDI_MIN_RUTBE) {
             o.toastlar.Ekle(M("YENİ ARAÇ: KREDİ", "NEW TOOL: CREDIT"),
-                            M("Sağ üstteki Kredi düğmesiyle borç al; kazanç da zarar da büyür.",
-                              "Borrow with the Credit button at the top right; gains and losses both grow."),
+                            M("Kredi düğmesiyle borç al; kazanç da zarar da büyür.",
+                              "Borrow with the Credit button; gains and losses both grow."),
                             RENK_MAVI_VURGU, 8.0f);
             HaberBandinaEkle(o, M("YENİ ARAÇ: Kredi masası açıldı - teminat oranın düşerse pozisyonların zorla kapatılır.",
                                   "NEW TOOL: The credit desk is open - if your margin ratio drops, positions are force-closed."));
@@ -97,12 +110,12 @@ static void PiyasaGuncelle(Oyun& o) {
     for (auto& h : o.hisseler) {
         h.oncekiFiyat = h.fiyat;
 
-        // 2) Hisseye ozgu KALICI faktor (kendi trendi) ve beyaz gurultu.
-        float ozelOlcek = OZEL_OLCEK_TABAN + OZEL_OLCEK_EGIM * h.beta;
-        h.ozelFaktor = h.ozelFaktor * OZEL_KALICILIK + RastgeleGauss() * OZEL_SOK_BUYUKLUK * ozelOlcek;
-        float beyazGurultu = RastgeleGauss() * h.volatilite;
+        // 2) Varliga ozgu KALICI faktor (kendi trendi) ve beyaz gurultu.
+        h.ozelFaktor = h.ozelFaktor * OZEL_KALICILIK + RastgeleGauss() * OZEL_SOK_BUYUKLUK * h.ozelOlcek;
+        float beyazGurultu = RastgeleGauss() * h.volatilite * h.volCarpani;
 
-        // 3) Genel piyasadan betasi kadar pay.
+        // 3) Genel piyasadan betasi kadar pay (guvenli limanlarda beta EKSI:
+        // piyasa duserken hafifce yukselirler).
         float piyasaEtkisi = o.piyasaFaktoru * h.beta;
 
         // 4) Adil degere dogru hafif cekim.
@@ -116,7 +129,7 @@ static void PiyasaGuncelle(Oyun& o) {
         h.gosterilenFiyat.Ayarla(h.fiyat);
 
         // 5) Oynaklik kumelenmesi: buyuk hareket sonrasi oynaklik sicrar, sakin
-        // turlerde tabanina soner. Taban = baz + hisseye ozel risk primi + kuresel
+        // turlerde tabanina soner. Taban = baz + varliga ozel risk primi + kuresel
         // risk primi (ikisi de KALICI; oyun ilerledikce piyasa sertlesir).
         if (fabsf(toplamOran) > VOL_SOK_ESIGI) {
             h.volatilite = fminf(VOL_TAVAN, h.volatilite * VOL_SOK_CARPANI);
@@ -134,26 +147,31 @@ static void PiyasaGuncelle(Oyun& o) {
 
 // Bir olay havuzundan, IYI (carpan > 1) olaylara 'iyiSans' olasilikla agirlik
 // vererek bir eleman secer. Istenen turden olay yoksa digerine duser.
+// Her zaman tam IKI rastgele sayi ceker.
 template <typename T, typename CarpanAl>
 static int AgirlikliOlaySec(const vector<T>& havuz, float iyiSans, CarpanAl carpanAl) {
+    float zarYon = Rastgele01();
+    float zarSira = Rastgele01();
     if (havuz.empty()) return 0;
     vector<int> iyiler, kotular;
     for (int i = 0; i < (int)havuz.size(); i++) {
         if (carpanAl(havuz[i]) > 1.0f) iyiler.push_back(i);
         else kotular.push_back(i);
     }
-    bool iyiIstiyoruz = Rastgele01() < iyiSans;
+    bool iyiIstiyoruz = zarYon < iyiSans;
     const vector<int>* grup = nullptr;
     if (iyiIstiyoruz && !iyiler.empty()) grup = &iyiler;
     else if (!iyiIstiyoruz && !kotular.empty()) grup = &kotular;
     else grup = iyiler.empty() ? &kotular : &iyiler;
-    if (grup->empty()) return GetRandomValue(0, (int)havuz.size() - 1);
-    return (*grup)[GetRandomValue(0, (int)grup->size() - 1)];
+    int n = (int)grup->size();
+    return (*grup)[min(n - 1, (int)(zarSira * (float)n))];
 }
 
+// Acik (kilidi acilmis) HISSELER. Guvenli limanlar dahil degildir: onlarin
+// haberi, bilancosu, iceriden bilgisi yoktur.
 static vector<int> AcikHisseler(const Oyun& o) {
     vector<int> acik;
-    for (int i = 0; i < (int)o.hisseler.size(); i++)
+    for (int i = 0; i < HisseSayisi(); i++)
         if (o.HisseAcikMi(i)) acik.push_back(i);
     return acik;
 }
@@ -165,14 +183,34 @@ static void BandiSabitle(Oyun& o, float sure) {
     o.haberSabitKalmaSuresi = sure;
 }
 
+// Haberlerin HEYECAN payinin rutbeye gore olcegi: rutbe 0'da 0, son rutbede 1.
+// (Senaryonun acemi korumasindan BAGIMSIZ: Kriz Yili'nda da rutbeyle buyur.)
+// Yalnizca degerlemenin ne kadar hizli OLUSTUGUNU belirler; olusmus bir
+// degerlemenin cezasi her rutbede aynidir.
+static float DegerlemeGucu(const Oyun& o) {
+    int sonRutbe = (int)RUTBELER.size() - 1;
+    return (sonRutbe > 0) ? Clamp((float)o.rutbeIndex / (float)sonRutbe, 0.0f, 1.0f) : 0.0f;
+}
+
 static void HaberKontrolEt(Oyun& o) {
-    if (Rastgele01() >= HABER_OLASILIK) return;
+    float zarVar = Rastgele01();
+    float zarHisse = Rastgele01();
+    if (zarVar >= HABER_OLASILIK) return;
     // Haberler sadece ACIK hisseler icin cikar (kilitli hisse spoiler olmasin).
     vector<int> acik = AcikHisseler(o);
-    if (acik.empty()) return;
-    int idx = acik[GetRandomValue(0, (int)acik.size() - 1)];
+    if (acik.empty()) {
+        Rastgele01(); // akis kaymasin: AgirlikliOlaySec'in iki cekimi
+        Rastgele01();
+        return;
+    }
+    int idx = acik[min((int)acik.size() - 1, (int)(zarHisse * (float)acik.size()))];
     const auto& havuz = SIRKETLER[idx].haberler;
+
+    // Iyi haber olasiligi: rutbeye bagli taban (acemi korumasi) EKSI degerleme
+    // cezasi. Pahali hisseye iyi haber gelmesi zorlasir, ucuz hisseye kolaylasir.
     float iyiSans = ACEMI_HISSE_IYI_TABAN + ACEMI_HISSE_IYI_BONUS * AcemiKorumasi(o);
+    iyiSans -= DEGERLEME_HABER_EGIMI * logf(Degerleme(o.hisseler[idx]));
+    iyiSans = Clamp(iyiSans, 0.10f, 0.92f);
     const auto& sablon = havuz[AgirlikliOlaySec(havuz, iyiSans, [](const HaberSablonu& s) { return s.carpan; })];
 
     BeklemedeHaber bh;
@@ -180,6 +218,7 @@ static void HaberKontrolEt(Oyun& o) {
     bh.carpan = sablon.carpan;
     bh.metin = sablon.metin.al();
     bh.kalanSure = HABER_ETKI_GECIKME_SN;
+    bh.tur = HABER_SIRKET;
     o.bekleyenHaberler.push_back(bh);
 
     HaberBandinaEkle(o, string(M("SON DAKİKA [", "BREAKING [")) + o.hisseler[idx].kod + "]: " + bh.metin + "  (" +
@@ -190,52 +229,116 @@ static void HaberKontrolEt(Oyun& o) {
 }
 
 static void BekleyenHaberleriGuncelle(Oyun& o, float dt) {
-    for (auto it = o.bekleyenHaberler.begin(); it != o.bekleyenHaberler.end();) {
-        it->kalanSure -= dt;
-        if (it->kalanSure <= 0.0f) {
-            Hisse& h = o.hisseler[it->hisseIndex];
-            h.fiyat = fmaxf(0.5f, h.fiyat * it->carpan);
-            // Haber adil degeri de kaydirir - yoksa fiyat birkac saniyede geri surunur.
-            h.temelDeger = fmaxf(0.5f, h.temelDeger * it->carpan);
-            h.volatilite = fminf(VOL_TAVAN, h.volatilite * VOL_SOK_CARPANI);
-            h.gosterilenFiyat.Ayarla(h.fiyat);
-            h.flashSuresi = 0.6f;
-            h.flashIyi = it->carpan > 1.0f;
-            Cal(o.sesler.haberEtki);
-            it = o.bekleyenHaberler.erase(it);
-        } else {
-            ++it;
+    for (size_t k = 0; k < o.bekleyenHaberler.size();) {
+        BeklemedeHaber& bh = o.bekleyenHaberler[k];
+        bh.kalanSure -= dt;
+        if (bh.kalanSure > 0.0f) {
+            k++;
+            continue;
         }
+        const float carpan = bh.carpan;
+        const int tur = bh.tur;
+        Hisse& h = o.hisseler[bh.hisseIndex];
+        h.fiyat = fmaxf(0.5f, h.fiyat * carpan);
+        // Haber adil degeri de kaydirir - yoksa fiyat birkac saniyede geri surunur.
+        h.temelDeger = fmaxf(0.5f, h.temelDeger * carpan);
+
+        // ESAS DEGER (degerleme): haberin ne kadari "gercek"?
+        //   bilanco   : tamami (sirketin gercek kazanci)
+        //   duzeltme  : hic (fiyat esasa yaklasir, esas degismez)
+        //   haber vb. : rutbeyle artan bir kismi HEYECAN'dir, esasa yansimaz
+        if (tur == HABER_BILANCO) {
+            h.esasDeger = fmaxf(0.5f, h.esasDeger * carpan);
+        } else if (tur != HABER_DUZELTME) {
+            float heyecan = DEGERLEME_HEYECAN_PAYI * DegerlemeGucu(o);
+            h.esasDeger = fmaxf(0.5f, h.esasDeger * powf(carpan, 1.0f - heyecan));
+        }
+
+        h.volatilite = fminf(VOL_TAVAN, h.volatilite * VOL_SOK_CARPANI);
+        h.gosterilenFiyat.Ayarla(h.fiyat);
+        h.flashSuresi = 0.6f;
+        h.flashIyi = carpan > 1.0f;
+        Cal(o.sesler.haberEtki);
+        const bool elde = h.adet > 0;
+        const bool haberdenSonraAlindi = bh.oyuncuAldi;
+        o.bekleyenHaberler.erase(o.bekleyenHaberler.begin() + k); // (bh ve h referanslari artik kullanilmiyor)
+
+        if (carpan > 1.0f && elde) {
+            if (tur == HABER_BILANCO) GorevOlay(o, G_BILANCO);
+            else if (tur == HABER_SIRKET && haberdenSonraAlindi) GorevOlay(o, G_HABER);
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// DEGERLEME: duzeltme ve toparlanma (yeni gunde)
+// ---------------------------------------------------------------------------
+static void DegerlemeKontrolEt(Oyun& o) {
+    for (int i = 0; i < HisseSayisi(); i++) {
+        float zar = Rastgele01(); // kilitli hisse icin de cekilir (akis sabit kalsin)
+        Hisse& h = o.hisseler[i];
+        if (!o.HisseAcikMi(i)) continue;
+
+        bool bekleyenVar = false; // ayni hissede ust uste duzeltme birikmesin
+        for (auto& bh : o.bekleyenHaberler)
+            if (bh.hisseIndex == i && bh.tur == HABER_DUZELTME) bekleyenVar = true;
+        if (bekleyenVar) continue;
+
+        const float v = Degerleme(h);
+        float carpan = 1.0f;
+        const char* metin = nullptr;
+        const char* baslik = nullptr;
+        if (v > DUZELTME_ESIGI && zar < fminf(0.5f, DUZELTME_OLASILIK_EGIMI * (v - DUZELTME_ESIGI))) {
+            carpan = Clamp(powf(v, -0.5f), 0.80f, 0.94f); // fazlaligin yarisi geri alinir
+            baslik = M("DÜZELTME [", "CORRECTION [");
+            metin = M("Kâr satışları başladı; değerleme fazla şişmişti.", "Profit-taking has begun; the valuation had run too hot.");
+        } else if (v < TOPARLANMA_ESIGI && zar < fminf(0.5f, DUZELTME_OLASILIK_EGIMI * (TOPARLANMA_ESIGI - v))) {
+            carpan = Clamp(powf(v, -0.5f), 1.06f, 1.22f);
+            baslik = M("TOPARLANMA [", "REBOUND [");
+            metin = M("Ucuz kalan hisseye alıcı geldi.", "Buyers are stepping into the beaten-down stock.");
+        }
+        if (metin == nullptr) continue;
+
+        BeklemedeHaber bh;
+        bh.hisseIndex = i;
+        bh.carpan = carpan;
+        bh.metin = metin;
+        bh.kalanSure = HABER_ETKI_GECIKME_SN;
+        bh.tur = HABER_DUZELTME;
+        o.bekleyenHaberler.push_back(bh);
+        HaberBandinaEkle(o, string(baslik) + h.kod + "]: " + metin + "  (" + to_string((int)HABER_ETKI_GECIKME_SN) +
+                                 M(" sn içinde fiyata yansıyacak)", " s until it hits the price)"));
+        Cal(o.sesler.haberDuyuru);
+        BandiSabitle(o, HABER_ETKI_GECIKME_SN);
     }
 }
 
 // ---------------------------------------------------------------------------
 // BILANCO TAKVIMI
 // ---------------------------------------------------------------------------
-static void BilancoYenidenPlanla(Oyun& o, Hisse& h) {
-    h.bilancoGunu = o.gun + BILANCO_PERIYOT_GUN;
-    h.bilancoBeklenti = BilancoBeklentiUret(AcemiKorumasi(o));
-}
-
 // Yeni bir gune gecildiginde cagrilir.
 static void BilancoKontrolEt(Oyun& o) {
-    for (int i = 0; i < (int)o.hisseler.size(); i++) {
+    for (int i = 0; i < HisseSayisi(); i++) {
         Hisse& h = o.hisseler[i];
         if (o.gun < h.bilancoGunu) continue;
-        int beklenti = h.bilancoBeklenti;
-        BilancoYenidenPlanla(o, h);
+        const int beklenti = h.bilancoBeklenti;
+        // Zarlar kilitli hisse icin de atilir (ortam akisi oyuncudan bagimsiz kalsin).
+        const float zarSonuc = Rastgele01();
+        const float zarBuyukluk = Rastgele01();
+        h.bilancoGunu = o.gun + BILANCO_PERIYOT_GUN;
+        h.bilancoBeklenti = BilancoBeklentiUret(AcemiKorumasi(o));
         if (!o.HisseAcikMi(i)) continue; // kilitli hissenin bilancosu sessizce gecer
 
         bool iyi;
         float buyukluk;
         if (beklenti == 0) {
-            iyi = Rastgele01() < 0.5f;
-            buyukluk = RastgeleAralik(BILANCO_BELIRSIZ_MIN, BILANCO_BELIRSIZ_MAX);
+            iyi = zarSonuc < 0.5f;
+            buyukluk = BILANCO_BELIRSIZ_MIN + (BILANCO_BELIRSIZ_MAX - BILANCO_BELIRSIZ_MIN) * zarBuyukluk;
         } else {
-            bool tuttu = Rastgele01() < BILANCO_TUTMA_OLASILIGI;
+            bool tuttu = zarSonuc < BILANCO_TUTMA_OLASILIGI;
             iyi = (beklenti > 0) == tuttu;
-            buyukluk = tuttu ? RastgeleAralik(BILANCO_UYUMLU_MIN, BILANCO_UYUMLU_MAX)
-                             : RastgeleAralik(BILANCO_SURPRIZ_MIN, BILANCO_SURPRIZ_MAX);
+            buyukluk = tuttu ? BILANCO_UYUMLU_MIN + (BILANCO_UYUMLU_MAX - BILANCO_UYUMLU_MIN) * zarBuyukluk
+                             : BILANCO_SURPRIZ_MIN + (BILANCO_SURPRIZ_MAX - BILANCO_SURPRIZ_MIN) * zarBuyukluk;
         }
 
         BeklemedeHaber bh;
@@ -244,6 +347,7 @@ static void BilancoKontrolEt(Oyun& o) {
         bh.metin = iyi ? M("Bilanço beklentileri aştı, kâr güçlü geldi.", "Earnings beat expectations; profit came in strong.")
                        : M("Bilanço hayal kırıklığı yarattı, kâr beklentinin altında.", "Earnings disappointed; profit missed expectations.");
         bh.kalanSure = HABER_ETKI_GECIKME_SN;
+        bh.tur = HABER_BILANCO;
         o.bekleyenHaberler.push_back(bh);
 
         HaberBandinaEkle(o, string(M("BİLANÇO [", "EARNINGS [")) + h.kod + "]: " + bh.metin + "  (" +
@@ -256,16 +360,16 @@ static void BilancoKontrolEt(Oyun& o) {
 }
 
 // ---------------------------------------------------------------------------
-// ICERIDEN BILGI MEKTUBU
+// ICERIDEN BILGI MEKTUBU (oyuncuya ozel -> g_rngOyuncu)
 // ---------------------------------------------------------------------------
 static void InsiderMektupKontrolEt(Oyun& o) {
-    if (Rastgele01() >= INSIDER_OLASILIK) return;
+    if (g_rngOyuncu.Birim() >= INSIDER_OLASILIK) return;
     vector<int> acik = AcikHisseler(o);
     if (acik.empty()) return;
 
-    int idx = acik[GetRandomValue(0, (int)acik.size() - 1)];
-    float artis = RastgeleAralik(INSIDER_ARTIS_MIN, INSIDER_ARTIS_MAX);
-    float gecikme = RastgeleAralik(INSIDER_GECIKME_MIN_SN, INSIDER_GECIKME_MAX_SN);
+    int idx = acik[g_rngOyuncu.Aralik(0, (int)acik.size() - 1)];
+    float artis = INSIDER_ARTIS_MIN + (INSIDER_ARTIS_MAX - INSIDER_ARTIS_MIN) * g_rngOyuncu.Birim();
+    float gecikme = INSIDER_GECIKME_MIN_SN + (INSIDER_GECIKME_MAX_SN - INSIDER_GECIKME_MIN_SN) * g_rngOyuncu.Birim();
 
     // Yukselisi SIMDIDEN kuyruga koy: mektup okunmasa da gerceklesecek.
     BeklemedeHaber bh;
@@ -273,6 +377,7 @@ static void InsiderMektupKontrolEt(Oyun& o) {
     bh.carpan = 1.0f + artis;
     bh.metin = "(insider)";
     bh.kalanSure = gecikme;
+    bh.tur = HABER_INSIDER;
     o.bekleyenHaberler.push_back(bh);
 
     o.insiderMektupVar = true;
@@ -284,8 +389,7 @@ static void InsiderMektupKontrolEt(Oyun& o) {
 
     // Haber bandina BILEREK yazilmaz - bu bilgi sadece oyuncuya geliyor.
     o.toastlar.Ekle(M("GİZLİ ZARF", "SECRET ENVELOPE"),
-                    M("Üst barda seni bekleyen bir mektup var.", "A letter is waiting for you in the top bar."),
-                    RENK_ALTIN, 5.0f);
+                    M("Seni bekleyen bir mektup var.", "A letter is waiting for you."), RENK_ALTIN, 5.0f);
     Cal(o.sesler.haberDuyuru);
 }
 
@@ -306,10 +410,15 @@ static void InsiderMektubuAc(Oyun& o) {
 // KURESEL (MAKRO) OLAYLAR
 // ---------------------------------------------------------------------------
 static void KureselHaberKontrolEt(Oyun& o) {
-    if (Rastgele01() >= KURESEL_OLAY_OLASILIK) return;
-    float iyiSans = ACEMI_KURESEL_IYI_TABAN + ACEMI_KURESEL_IYI_BONUS * AcemiKorumasi(o);
-    const auto& sablon = KURESEL_OLAYLARI[AgirlikliOlaySec(
-        KURESEL_OLAYLARI, iyiSans, [](const KureselOlaySablonu& k) { return k.temelCarpan; })];
+    float zarVar = Rastgele01();
+    // Gunun Piyasasi'nda kuresel olaylar HERKES icin ayni olmali; orada iyi/kotu
+    // dengesi oyuncunun rutbesine degil sabit bir orta degere baglidir.
+    float koruma = o.Sen().gunluk ? 0.5f : AcemiKorumasi(o);
+    float iyiSans = ACEMI_KURESEL_IYI_TABAN + ACEMI_KURESEL_IYI_BONUS * koruma;
+    // (Olay olmasa da secim zarlari atilir: akis oyuncudan bagimsiz kalsin.)
+    int secilen = AgirlikliOlaySec(KURESEL_OLAYLARI, iyiSans, [](const KureselOlaySablonu& k) { return k.temelCarpan; });
+    if (zarVar >= KURESEL_OLAY_OLASILIK) return;
+    const auto& sablon = KURESEL_OLAYLARI[secilen];
 
     BeklemedeKuresel bk;
     bk.carpan = sablon.temelCarpan;
@@ -332,28 +441,41 @@ static void KureselHaberKontrolEt(Oyun& o) {
 }
 
 static void BekleyenKureselHaberleriGuncelle(Oyun& o, float dt) {
-    for (auto it = o.bekleyenKureselHaberler.begin(); it != o.bekleyenKureselHaberler.end();) {
-        it->kalanSure -= dt;
-        if (it->kalanSure <= 0.0f) {
-            for (auto& h : o.hisseler) {
-                // Etki her hissede kendi betasiyla olceklenir; vurgulanan sektor
-                // ayrica (bazen TERS yonde) etkilenir.
-                float etki = (it->carpan - 1.0f) * h.beta;
-                if (it->vurgulananSektor != Sektor::YOK && h.sektor == it->vurgulananSektor)
-                    etki += (it->sektorCarpani - 1.0f);
-                h.fiyat = fmaxf(0.5f, h.fiyat * (1.0f + etki));
-                h.temelDeger = fmaxf(0.5f, h.temelDeger * (1.0f + etki));
-                h.volatilite = fminf(VOL_TAVAN, h.volatilite * VOL_SOK_CARPANI);
-                h.gosterilenFiyat.Ayarla(h.fiyat);
-                h.flashSuresi = 0.6f;
-                h.flashIyi = etki >= 0.0f;
-            }
-            o.kureselRiskPrimi = Clamp(o.kureselRiskPrimi + it->riskPrimiDegisimi,
-                                       KURESEL_RISK_PRIMI_TABANI, KURESEL_RISK_PRIMI_TAVANI);
-            Cal(o.sesler.haberEtki);
-            it = o.bekleyenKureselHaberler.erase(it);
-        } else {
-            ++it;
+    for (size_t k = 0; k < o.bekleyenKureselHaberler.size();) {
+        BeklemedeKuresel& bk = o.bekleyenKureselHaberler[k];
+        bk.kalanSure -= dt;
+        if (bk.kalanSure > 0.0f) {
+            k++;
+            continue;
+        }
+        bool limanTutuluyor = false;
+        for (auto& h : o.hisseler) {
+            // Etki her varlikta kendi kuresel duyarliligiyla olceklenir: hisselerde
+            // beta (ayni yon), guvenli limanlarda EKSI (ters yon). Vurgulanan sektor
+            // ayrica (bazen ters yonde) etkilenir.
+            float etki = (bk.carpan - 1.0f) * h.kureselDuyarlilik;
+            if (!h.liman && bk.vurgulananSektor != Sektor::YOK && h.sektor == bk.vurgulananSektor)
+                etki += (bk.sektorCarpani - 1.0f);
+            h.fiyat = fmaxf(0.5f, h.fiyat * (1.0f + etki));
+            // Hisselerde etki kalicidir (makro, sirketin gercek degerini degistirir).
+            // Limanlarda sadece bir kismi kalici: panik gecince fiyat kismen geri gelir.
+            float kalici = 1.0f + etki * h.kaliciPay;
+            h.temelDeger = fmaxf(0.5f, h.temelDeger * kalici);
+            h.esasDeger = fmaxf(0.5f, h.esasDeger * kalici);
+            h.volatilite = fminf(VOL_TAVAN, h.volatilite * VOL_SOK_CARPANI);
+            h.gosterilenFiyat.Ayarla(h.fiyat);
+            h.flashSuresi = 0.6f;
+            h.flashIyi = etki >= 0.0f;
+            if (h.liman && h.adet > 0) limanTutuluyor = true;
+        }
+        o.kureselRiskPrimi = Clamp(o.kureselRiskPrimi + bk.riskPrimiDegisimi, KURESEL_RISK_PRIMI_TABANI, KURESEL_RISK_PRIMI_TAVANI);
+        const bool kotu = bk.carpan < 1.0f;
+        Cal(o.sesler.haberEtki);
+        o.bekleyenKureselHaberler.erase(o.bekleyenKureselHaberler.begin() + k);
+
+        if (kotu && limanTutuluyor) {
+            BasarimVer(o, B_LIMAN);
+            GorevOlay(o, G_LIMAN);
         }
     }
 }

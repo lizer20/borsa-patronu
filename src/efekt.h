@@ -95,10 +95,11 @@ struct ToastSistemi {
     // Govde metni eskiden TEK satirdi ve uzun kuresel haberler kutudan (ve
     // ekrandan) tasiyordu; artik kutu genisligine sarilir, kutu boyu satir
     // sayisina gore buyur (en fazla 3 satir).
-    void Ciz(int ekranGenislik) {
+    // y0: ilk bildirimin ust kenari (yatayda haber bandinin altinda, dikeyde de oyle).
+    void Ciz(int ekranGenislik, float y0 = 118.0f) {
         const float kutuW = 300.0f;
         const int govdeW = (int)kutuW - 18 - 14;
-        float y = 118.0f;
+        float y = y0;
         for (auto& t : liste) {
             float alpha = Clamp(t.omur / 0.5f, 0.0f, 1.0f);
             float x = (float)ekranGenislik - 320.0f + t.kaymaX.deger;

@@ -46,6 +46,23 @@ struct SatirOkuyucu {
         return (int)v;
     }
     bool Bool() { return Int() != 0; }
+    // 64 bit isaretsiz sayi (rastgele sayi ureteci durumu icin).
+    uint64_t U64() {
+        string s = Str();
+        if (hata) return 0;
+        char* son = nullptr;
+        unsigned long long v = strtoull(s.c_str(), &son, 10);
+        if (son == s.c_str()) {
+            hata = true;
+            return 0;
+        }
+        return (uint64_t)v;
+    }
+    // Okunacak satir kaldi mi? (sona eklenen istege bagli alanlar icin)
+    bool Kaldi() {
+        akis >> std::ws;
+        return !akis.eof() && akis.good();
+    }
 };
 
 struct Profil {
@@ -54,6 +71,11 @@ struct Profil {
     float rekorNet[SENARYO_SAYISI] = {}; // sureli senaryoda en yuksek net deger (0 = henuz yok)
     bool rehberGoruldu = false;
     int dil = -1; // -1 = henuz secilmedi (ilk acilista sistem diline bakilir)
+    // ---- v2.1 ile eklenenler (dosyanin SONUNDA; eski profillerde yoktur) ----
+    bool muzikAcik = true;
+    bool renkKoru = false;
+    int gunlukTarih = 0;      // Gunun Piyasasi: en son oynanan gun (YYYYAAGG)
+    float gunlukSkor = 0.0f;  // o gunun en iyi skoru
 };
 
 static Profil g_profil;
@@ -73,6 +95,10 @@ static void ProfilKaydet() {
     for (int i = 0; i < BASARIM_SAYISI; i++) f << (g_profil.basarim[i] ? 1 : 0) << "\n";
     f << (int)SENARYO_SAYISI << "\n";
     for (int i = 0; i < SENARYO_SAYISI; i++) f << g_profil.rekorGun[i] << "\n" << g_profil.rekorNet[i] << "\n";
+    f << (g_profil.muzikAcik ? 1 : 0) << "\n";
+    f << (g_profil.renkKoru ? 1 : 0) << "\n";
+    f << g_profil.gunlukTarih << "\n";
+    f << g_profil.gunlukSkor << "\n";
     DepoYaz(PROFIL_DOSYA_ADI, f.str());
 }
 
@@ -105,6 +131,14 @@ static void ProfilYukle() {
         }
     }
     if (r.hata) return;
+    // v2.1 alanlari: eski profillerde yok, o zaman varsayilanda kalir.
+    if (r.Kaldi()) {
+        yeni.muzikAcik = r.Bool();
+        yeni.renkKoru = r.Bool();
+        yeni.gunlukTarih = r.Int();
+        yeni.gunlukSkor = fmaxf(0.0f, r.Float());
+        if (r.hata) return;
+    }
     if (yeni.dil != 0 && yeni.dil != 1) yeni.dil = -1;
     g_profil = yeni;
 }
@@ -145,6 +179,23 @@ static bool RekorNetGuncelle(int senaryo, float net) {
         return true;
     }
     return false;
+}
+
+// Gunun Piyasasi skoru: rekor O GUNE aittir; yeni bir gunde sifirdan baslar.
+static bool GunlukSkorGuncelle(int tarih, float skor) {
+    if (tarih <= 0) return false;
+    if (g_profil.gunlukTarih != tarih || skor > g_profil.gunlukSkor) {
+        g_profil.gunlukTarih = tarih;
+        g_profil.gunlukSkor = skor;
+        ProfilKaydet();
+        return true;
+    }
+    return false;
+}
+
+// Bugun icin kayitli en iyi skor (bugun hic oynanmadiysa 0).
+static float BugunkuGunlukSkor() {
+    return (g_profil.gunlukTarih == BugunTarih()) ? g_profil.gunlukSkor : 0.0f;
 }
 
 static void DilAyarla(Dil d) {

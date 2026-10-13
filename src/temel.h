@@ -5,8 +5,35 @@
 // degistirdikten sonra "python build.py test" ile denge testini calistir ve
 // botlarin rutbelere kac gunde ulastigini onceki raporla karsilastir.
 
-static const int PENCERE_GENISLIK = 1280;
-static const int PENCERE_YUKSEKLIK = 720; // tam 16:9 - yaygin monitorlerde pillarbox kalmaz
+// ---- SANAL SAHNE BOYUTU (v2.1: degisken) ----
+// Oyun "sanal" bir sahneye cizilir, sonra gercek pencereye olceklenir. v2.0'a
+// kadar sahne sabit 1280x720 idi; 16:9 olmayan her pencerede (ornegin bir
+// tarayici sekmesi ~2:1'dir) sagda/solda siyah bosluk kaliyordu. Artik sahne
+// pencerenin en-boy oranina UYAR:
+//   YATAY (oran >= DIKEY_ESIK_ORAN):
+//          16:9'dan GENIS pencere -> yukseklik 720, genislik 1280..1920
+//                                    (fazla alan grafige gider);
+//          16:9'dan KARE pencere  -> genislik 1280, yukseklik 720..960
+//                                    (fazla alan kartlara ve grafige gider).
+//          Yani 4:3 ile 8:3 arasindaki her pencere BOSLUKSUZ dolar.
+//   DIKEY (telefon, oran < esik): genislik 480..720, yukseklik 900..1180;
+//          tamamen ayri, dokunmaya uygun bir yerlesim kullanilir (arayuz_dikey.h).
+// Bu araliklarin disinda kalan (cok uzun / cok basik) pencerelerde sahne
+// ortalanir ve kalan yer bos kalir.
+// PENCERE_GENISLIK / PENCERE_YUKSEKLIK bu yuzden SABIT DEGIL, o anki sahne
+// boyutudur; yerlesim kodu her zaman bunlara gore hesap yapar.
+static int PENCERE_GENISLIK = 1280;
+static int PENCERE_YUKSEKLIK = 720;
+[[maybe_unused]] static bool g_dikey = false; // dikey (telefon) yerlesimi etkin mi
+
+static const int YATAY_YUKSEKLIK = 720;
+static const int YATAY_MAX_YUKSEKLIK = 960;
+static const int YATAY_MIN_GENISLIK = 1280;
+static const int YATAY_MAX_GENISLIK = 1920;
+static const float DIKEY_ESIK_ORAN = 0.80f; // en/boy bunun altindaysa dikey yerlesim
+static const int DIKEY_MIN_GENISLIK = 480;
+static const int DIKEY_MIN_YUKSEKLIK = 900;
+static const int DIKEY_MAX_YUKSEKLIK = 1180;
 
 // Ana menude kosede gosterilen surum (src/surum.h icinden gelir).
 static const char* OYUN_SURUMU = SURUM_METIN;
@@ -17,6 +44,11 @@ static const char* PROFIL_DOSYA_ADI = "borsa_profil.sav";
 static const float BASLANGIC_BAKIYE = 10000.0f; // "Klasik" senaryonun baslangic sermayesi
 static const int GECMIS_UZUNLUK = 90;     // ana grafikte tutulan veri noktasi
 static const int SPARKLINE_UZUNLUK = 30;  // kart ici mini grafikte tutulan veri
+
+// Simulasyon SABIT adimlarla ilerler (kare hizindan bagimsiz). Ayni tohum + ayni
+// adim sayisi = ayni piyasa; "Gunun Piyasasi" senaryosu ve tekrarlanabilir
+// hata raporlari buna dayanir.
+static const float SIM_ADIM_SN = 0.05f;
 
 static const float PIYASA_TICK_SN = 1.0f;        // fiyat guncelleme sikligi
 static const float HABER_TICK_SN = 4.0f;         // haber kontrol sikligi
@@ -107,6 +139,19 @@ static const int TOPLAM_HISSE_SAYISI = 1000;
 static const float YONETIM_OLAY_MIN_SN = 14.0f;
 static const float YONETIM_OLAY_MAX_SN = 24.0f;
 static const float RISK_PRIMI_TAVANI = 0.035f;
+// YONETIM KARARLARI (v2.1): riskli secenek bir KUMARDIR.
+// v2.0'a kadar riskli secenek her seferinde +%8..18 veriyor, tek bedeli biraz
+// oynaklikti; olculdu: sirketi devralip HEP riskliyi secen oyuncu 30.000 TL'den
+// zirveye medyan 29 gunde, oyunlarin %100'unde cikiyordu (haberleri okuyan bot
+// ayni yolu ~80 gunde aliyor). Yani "risk" yoktu ve baska her sey anlamsizlasiyordu.
+// Artik: riskli karar TUTARSA sablondaki kazanc, TUTMAZSA ona yakin bir kayip.
+// Tutma olasiligi sirketin birikmis risk primine baglidir - ust uste risk alan
+// sirket kirilganlasir; guvenli kararlar risk primini dusurup sirketi toparlar.
+// Dogru oyun: sirket saglamken risk al, kirilganken toparla.
+static const float YONETIM_BASARI_TABAN = 0.70f;       // temiz sirkette (risk primi 0) tutma olasiligi
+static const float YONETIM_BASARI_RISK_EGIMI = 0.40f;  // risk primi tavandayken bu kadar duser (0,70 -> 0,30)
+static const float YONETIM_BASARISIZLIK_ORANI = 0.75f; // tutmazsa kayip = sablondaki kazancin bu kati
+static const float YONETIM_GUVENLI_TOPARLANMA = 0.006f; // her guvenli karar risk primini bu kadar dusurur
 static const float RISK_PRIMI_TABANI = 0.0f;
 
 // ---- KURESEL (MAKRO) OLAYLAR ----
@@ -156,10 +201,68 @@ static const float BILANCO_UYUMLU_MIN = 0.05f, BILANCO_UYUMLU_MAX = 0.09f;
 static const float BILANCO_SURPRIZ_MIN = 0.08f, BILANCO_SURPRIZ_MAX = 0.14f;
 static const float BILANCO_BELIRSIZ_MIN = 0.06f, BILANCO_BELIRSIZ_MAX = 0.12f;
 
+// ---- DEGERLEME (v2.1) ----
+// SORUN (denge testiyle olculdu): hic satmayan, hicbir beceri gostermeyen bot
+// oyunlarin %81'inde zirveye cikiyordu. Iyi haber kotuden sik geldigi icin her
+// hisse SONSUZA DEK yukseliyordu; oyunun sonu beceri degil sabir olcuyordu.
+//
+// COZUM: her hissenin gizli bir "esas degeri" var. Sirket haberlerinin sadece
+// bir kismi esasa yansir, kalani HEYECANDIR. Degerleme = adilDeger / esasDeger.
+// Hisse pahalilastikca (degerleme > 1):
+//   - o hisseye iyi haber gelme olasiligi DUSER (beklenti yukseldi, hayal
+//     kirikligi kolaylasti),
+//   - esigi asarsa her gun bir DUZELTME (sert dusus) riski dogar.
+// Ucuzlayan hissede bunlarin tersi olur (TOPARLANMA). Kartta KELEPIR / UCUZ /
+// MAKUL / PAHALI / BALON etiketi durur: oyuncunun okuyup kullanabilecegi, gercek
+// piyasadaki "pahali hisse risklidir" sezgisinin oyundaki karsiligi.
+//
+// OYUNUN BASIYLA UYUM: kullanici oyunun basinin yumusak olmasini ozellikle istedi.
+// Bu yuzden haberlerin HEYECAN payi rutbeyle buyur (rutbe 0'da 0, son rutbede
+// DEGERLEME_HEYECAN_PAYI): ilk rutbelerde degerleme hic oynamaz, etiket hep
+// MAKUL kalir. AMA etiketin ANLAMI her rutbede aynidir - PAHALI yazan hisse her
+// zaman ayni cezayi tasir. (Ilk tasarimda ceza da rutbeyle olcekleniyordu; o
+// zaman "PAHALI gorunce sat" kurali orta rutbelerde zarar ettiriyordu, cunku
+// etiket yaziyordu ama etkisi yoktu. Denge testindeki Degerci botu bunu gosterdi.)
+//
+// SAYILARIN ANLAMI (son rutbede): iyi haber olasiligi 0,67 - EGIM*ln(degerleme).
+// Haber getirisinin beklentisi degerleme ~1,10'da SIFIRA iner; bu, hisselerin
+// etrafinda dolandigi dengedir. Etiket sinirlari buna gore secildi:
+//   MAKUL  (<= 1,12): beklenen getiri arti ya da sifir
+//   PAHALI (<= 1,27): beklenen getiri EKSI
+//   BALON  (>  1,27): belirgin eksi + duzeltme riski (esik 1,30)
+//   UCUZ / KELEPIR  : belirgin arti (+ toparlanma olasiligi)
+static const float DEGERLEME_HEYECAN_PAYI = 0.5f;   // son rutbede haber etkisinin heyecan olan kismi
+static const float DEGERLEME_HABER_EGIMI = 1.5f;    // iyi haber olasiligi, ln(degerleme) basina bu kadar duser
+// Sirket zamanla degerlemesinin "icini doldurur": esas deger her gun, adil
+// degerle arasindaki farkin bu kadarini kapatir. Bu olmasaydi denge noktasinda
+// haber getirisi tam SIFIR olurdu (hisseler hic buyumezdi, haberleri oynayan
+// oyuncu da belirgin yavaslardi). Bununla al-tut getirisi sifirlanmaz, yavaslar.
+static const float DEGERLEME_YAKINSAMA_GUNLUK = 0.03f;
+static const float DUZELTME_ESIGI = 1.30f;          // degerleme bunu asarsa duzeltme riski
+static const float TOPARLANMA_ESIGI = 0.80f;        // bunun altindaysa toparlanma olasiligi
+static const float DUZELTME_OLASILIK_EGIMI = 1.5f;  // gunluk olasilik = egim * (esigi asan miktar), en fazla 0,5
+// Etiket sinirlari (degerleme orani)
+static const float DEGERLEME_KELEPIR = 0.85f;
+static const float DEGERLEME_UCUZ = 0.97f;
+static const float DEGERLEME_PAHALI = 1.12f;
+static const float DEGERLEME_BALON = 1.27f;
+
+// ---- GOREVLER (v2.1) ----
+// Rutbeler arasi bosluk oyun ilerledikce uzuyor; arayi kisa hedefler doldurur.
+// Her an TEK bir gorev vardir; tamamlaninca net degerin GOREV_ODUL_ORANI kadari
+// nakit odul gelir, kisa bir aradan sonra yenisi verilir. Suresi dolan gorev
+// cezasiz degisir.
+static const float GOREV_ODUL_ORANI = 0.02f;
+static const float GOREV_ODUL_TABAN = 150.0f;
+static const int GOREV_SURE_GUN = 8;
+static const float GOREV_ARA_SN = 6.0f;
+static const float GOREV_ILK_BEKLEME_SN = 25.0f; // oyunun basinda ilk gorev gelmeden once
+
 // ---- GELISMIS ARACLAR: rutbeyle kademeli acilir (v2.0) ----
 static const int EMIR_MIN_RUTBE = 1;   // stop / kar al / limit emirleri
 static const int ACIGA_MIN_RUTBE = 2;  // aciga satis
 static const int KREDI_MIN_RUTBE = 3;  // kredi (kaldirac)
+static const int LIMAN_MIN_RUTBE = 2;  // guvenli liman varliklari (altin, dolar)
 
 // ---- KREDI / ACIGA SATIS / TEMINAT (v2.0) ----
 // Yukumluluk = borc + aciga satilan hisselerin guncel degeri.
@@ -182,12 +285,32 @@ static const Color RENK_PANEL = {22, 26, 34, 255};
 static const Color RENK_PANEL_ACIK = {30, 35, 45, 255};
 static const Color RENK_KENARLIK = {45, 52, 64, 255};
 static const Color RENK_ALTIN = {255, 203, 0, 255};
-static const Color RENK_YESIL = {6, 214, 160, 255};
-static const Color RENK_KIRMIZI = {239, 71, 111, 255};
+// YESIL / KIRMIZI / UYARI sabit DEGIL: renk koru modunda degisirler (bkz. PaletiAyarla).
+static Color RENK_YESIL = {6, 214, 160, 255};
+static Color RENK_KIRMIZI = {239, 71, 111, 255};
 static const Color RENK_MAVI_VURGU = {17, 138, 178, 255};
 static const Color RENK_METIN = {230, 233, 238, 255};
 static const Color RENK_SOLUK_METIN = {138, 146, 163, 255};
-static const Color RENK_UYARI = {255, 159, 28, 255}; // notr "dikkat" tonu - iyi/kotu ima etmez
+static Color RENK_UYARI = {255, 159, 28, 255}; // notr "dikkat" tonu - iyi/kotu ima etmez
+
+// Renk koru modu: oyun kazanc/kaybi yesil/kirmiziyla anlatiyor, bu ikili en yaygin
+// renk korlugu turlerinde ayirt edilemez. Mod acikken yerlerine MAVI / TURUNCU
+// gelir (renk korlugune dayanikli standart ikili); "notr dikkat" rengi de
+// turuncuyla karismasin diye mora doner. (Fiyat oklari ve +/- isaretleri zaten
+// renkten bagimsiz ikinci bir ipucu veriyor.)
+static bool g_renkKoru = false;
+static void PaletiAyarla(bool renkKoru) {
+    g_renkKoru = renkKoru;
+    if (renkKoru) {
+        RENK_YESIL = {64, 170, 255, 255};
+        RENK_KIRMIZI = {255, 140, 0, 255};
+        RENK_UYARI = {200, 160, 255, 255};
+    } else {
+        RENK_YESIL = {6, 214, 160, 255};
+        RENK_KIRMIZI = {239, 71, 111, 255};
+        RENK_UYARI = {255, 159, 28, 255};
+    }
+}
 
 // ============================================================================
 // YARDIMCI FONKSIYONLAR
@@ -198,18 +321,59 @@ static float Yumusat(float mevcut, float hedef, float dt, float hiz) {
     return mevcut + (hedef - mevcut) * t;
 }
 
+// ---------------------------------------------------------------------------
+// SIMULASYONUN KENDI RASTGELE SAYI URETECI
+// ---------------------------------------------------------------------------
+// Simulasyon raylib'in GetRandomValue()'sunu KULLANMAZ: onu parcacik efektleri de
+// kullaniyor, yani oyuncunun her tiklamasi piyasanin gelecegini degistirirdi.
+// Iki ayri akis var:
+//   g_rngPiyasa : ortam (fiyatlar, haberler, kuresel olaylar, bilancolar).
+//                 Oyuncunun ne yaptigindan BAGIMSIZ sayida cekilir.
+//   g_rngOyuncu : oyuncunun durumuna bagli olaylar (yonetim kararlari, iceriden
+//                 bilgi mektubu). Bunlar ortam akisini KAYDIRMAZ.
+// Ikisinin durumu da kayit dosyasina yazilir: kaydi yeniden yuklemek gelecegi
+// yeniden "zar atmaz" (kotu haberden once kaydedip yukleyerek kacilamaz).
+struct Rng {
+    uint64_t durum = 0x9E3779B97F4A7C15ULL;
+
+    void Tohumla(uint64_t tohum) {
+        durum = tohum * 0x9E3779B97F4A7C15ULL + 0xD1B54A32D192ED03ULL;
+        if (durum == 0) durum = 0x9E3779B97F4A7C15ULL;
+        for (int i = 0; i < 8; i++) Sonraki();
+    }
+    uint32_t Sonraki() { // xorshift64*
+        durum ^= durum >> 12;
+        durum ^= durum << 25;
+        durum ^= durum >> 27;
+        return (uint32_t)((durum * 0x2545F4914F6CDD1DULL) >> 32);
+    }
+    float Birim() { return (float)(Sonraki() >> 8) * (1.0f / 16777216.0f); } // [0,1)
+    int Aralik(int a, int b) { // [a,b] dahil
+        if (b <= a) return a;
+        return a + (int)(Sonraki() % (uint32_t)(b - a + 1));
+    }
+};
+
+static Rng g_rngPiyasa;
+static Rng g_rngOyuncu;
+
+static void SimTohumla(uint64_t tohum) {
+    g_rngPiyasa.Tohumla(tohum);
+    g_rngOyuncu.Tohumla(tohum ^ 0x5DEECE66D1234567ULL);
+}
+
+// [0,1) araliginda tekduze rastgele sayi (ortam akisi).
+static float Rastgele01() { return g_rngPiyasa.Birim(); }
+static int RastgeleInt(int a, int b) { return g_rngPiyasa.Aralik(a, b); }
+
 // Yaklasik "can egrisi" dagilimli rastgele sayi: 4 tekduze [-1,1] orneginin
 // ortalamasi. Standart sapmasi 1/sqrt(12) = 0,289; |x| asla 1'i gecemez
 // (kuyruklar kesili - tek tikte fiyat ucamaz, bilincli tasarim).
 static float RastgeleGauss() {
     float toplam = 0.0f;
-    for (int i = 0; i < 4; i++) toplam += (float)GetRandomValue(-1000, 1000) / 1000.0f;
+    for (int i = 0; i < 4; i++) toplam += Rastgele01() * 2.0f - 1.0f;
     return toplam / 4.0f;
 }
-
-// [0,1) araliginda tekduze rastgele sayi.
-static float Rastgele01() { return (float)GetRandomValue(0, 9999) / 10000.0f; }
-static float RastgeleAralik(float a, float b) { return a + (b - a) * Rastgele01(); }
 
 // Yumusak deger degisimi icin kucuk yardimci (fiyat, net deger gibi seyler
 // aniden degil, goz onunde akarak degisir)

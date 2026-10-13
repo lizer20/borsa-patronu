@@ -3,6 +3,8 @@
 // ============================================================================
 // Her pencere icin iki fonksiyon vardir: ...Guncelle (tiklamalar) ve ...Ciz.
 // Hangi pencerenin tiki alacagina uygulama.h karar verir (en usttekine).
+// Konumlar PencereleriKur() icinde hesaplanir; buradaki cizim kodu panelin
+// GERCEK genisligine gore yazar (dar sahnede metinler sarilir).
 
 // Oyundan cikis istegi: kaydedilmemis ilerleme varsa once onay penceresi.
 static void CikisIste(Uygulama& u) {
@@ -71,14 +73,25 @@ static void DuraklatMenusuCiz(Uygulama& u) {
     if (PlatformdaCikisVar()) a.cikisBtn.Ciz(16);
 
     // Istatistikler: ayri bir ekran yerine burada - herkes bir noktada
-    // duraklatir, yani kesin gorulen bir yer.
-    string ist1 = string(M("İşlem: ", "Trades: ")) + to_string(o.islemSayisi) + "     " +
-                  M("Gerçekleşen K/Z: ", "Realized P/L: ") + ParaIsaretli(o.gerceklesenKar);
-    string ist2 = string(M("En iyi satış: ", "Best sale: ")) + ParaIsaretli(o.enIyiIslem) + "     " +
-                  M("En kötü: ", "Worst: ") + Para(o.enKotuIslem);
-    int y = (int)(a.dmPanel.y + a.dmPanel.height) + 18;
-    YaziCizOrtali(ist1, ortaX, y, 14, o.gerceklesenKar >= 0 ? RENK_YESIL : RENK_KIRMIZI);
-    YaziCizOrtali(ist2, ortaX, y + 22, 13, RENK_SOLUK_METIN);
+    // duraklatir, yani kesin gorulen bir yer. Dar sahnede dort kisa satir.
+    string islem = string(M("İşlem: ", "Trades: ")) + to_string(o.islemSayisi) + "     " + M("Görev: ", "Missions: ") +
+                   to_string(o.tamamlananGorev);
+    string kz = string(M("Gerçekleşen K/Z: ", "Realized P/L: ")) + ParaIsaretli(o.gerceklesenKar);
+    string enIyi = string(M("En iyi satış: ", "Best sale: ")) + ParaIsaretli(o.enIyiIslem);
+    string enKotu = string(M("En kötü: ", "Worst: ")) + Para(o.enKotuIslem);
+    Color kzRenk = o.gerceklesenKar >= 0 ? RENK_YESIL : RENK_KIRMIZI;
+    if (DarEkran()) {
+        int y = (int)(a.dmPanel.y + a.dmPanel.height) - 104; // panelin icinde, dugmelerin altinda
+        DrawRectangle((int)a.dmPanel.x + 30, y - 12, (int)a.dmPanel.width - 60, 1, RENK_KENARLIK);
+        YaziCizOrtali(islem, ortaX, y, 13, RENK_SOLUK_METIN);
+        YaziCizOrtali(kz, ortaX, y + 20, 14, kzRenk);
+        YaziCizOrtali(enIyi, ortaX, y + 42, 13, RENK_SOLUK_METIN);
+        YaziCizOrtali(enKotu, ortaX, y + 60, 13, RENK_SOLUK_METIN);
+    } else {
+        int y = (int)(a.dmPanel.y + a.dmPanel.height) + 18;
+        YaziCizOrtali(islem + "     " + kz, ortaX, y, 14, kzRenk);
+        YaziCizOrtali(enIyi + "     " + enKotu, ortaX, y + 22, 13, RENK_SOLUK_METIN);
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -94,6 +107,11 @@ static void AyarlarGuncelle(Uygulama& u, float dt, const Girdi& g) {
         sesAcik = !sesAcik;
         Cal(o.sesler.tikla);
     }
+    if (a.muzikBtn.Guncelle(dt, fare, tik)) {
+        g_profil.muzikAcik = !g_profil.muzikAcik;
+        ProfilKaydet();
+        Cal(o.sesler.tikla);
+    }
     if (a.rehberBtn.Guncelle(dt, fare, tik)) {
         if (o.rehberAdim >= 0) {
             RehberiBitir(o);
@@ -102,6 +120,13 @@ static void AyarlarGuncelle(Uygulama& u, float dt, const Girdi& g) {
             o.rehberBekleme = 0.3f;
             o.rehberSatisSayisi = 0;
         }
+        Cal(o.sesler.tikla);
+    }
+    if (a.renkKoruBtn.Guncelle(dt, fare, tik)) {
+        PaletiAyarla(!g_renkKoru);
+        g_profil.renkKoru = g_renkKoru;
+        ProfilKaydet();
+        ArayuzKur(a, (int)o.hisseler.size()); // dugme renkleri yeni palete gore
         Cal(o.sesler.tikla);
     }
     if (PlatformdaCikisVar()) {
@@ -137,7 +162,7 @@ static void AyarlarGuncelle(Uygulama& u, float dt, const Girdi& g) {
     // Ses seviyesi kaydiricisi ("tut ve surukle")
     Rectangle iz = a.sesKaydirici;
     if (g.fareBasili && IsAudioDeviceReady() &&
-        CheckCollisionPointRec(fare, {iz.x - 8, iz.y - 10, iz.width + 16, iz.height + 20})) {
+        CheckCollisionPointRec(fare, {iz.x - 8, iz.y - 12, iz.width + 16, iz.height + 24})) {
         SetMasterVolume(Clamp((fare.x - iz.x) / iz.width, 0.0f, 1.0f));
     }
 
@@ -157,19 +182,23 @@ static void AyarlarCiz(Uygulama& u) {
 
     YaziCiz(M("AYARLAR", "SETTINGS"), px + 30, py + 22, 24, RENK_ALTIN);
 
-    YaziCiz(M("SES VE REHBER", "SOUND AND GUIDE"), px + 30, py + 68, 14, RENK_SOLUK_METIN);
+    YaziCiz(M("SES VE MÜZİK", "SOUND AND MUSIC"), px + 30, py + 68, 14, RENK_SOLUK_METIN);
     a.sesBtn.Ciz(14);
-    a.rehberBtn.Ciz(14);
+    a.muzikBtn.Ciz(14);
 
     float seviye = IsAudioDeviceReady() ? GetMasterVolume() : 0.0f;
     Rectangle iz = a.sesKaydirici;
-    YaziCiz(string(M("Ses Seviyesi: ", "Volume: ")) + Yuzde(seviye * 100.0f, 0), px + 30, py + 138, 14, RENK_METIN);
+    YaziCiz(string(M("Ses Seviyesi: ", "Volume: ")) + Yuzde(seviye * 100.0f, 0), px + 30, py + 140, 14, RENK_METIN);
     DrawRectangleRounded(iz, 0.5f, 8, RENK_KENARLIK);
     DrawRectangleRounded({iz.x, iz.y, iz.width * seviye, iz.height}, 0.5f, 8, sesAcik ? RENK_YESIL : RENK_KENARLIK);
     DrawCircleV({iz.x + iz.width * seviye, iz.y + iz.height / 2.0f}, 11.0f, RENK_ALTIN);
 
-    YaziCiz(M("PENCERE MODU", "WINDOW MODE"), px + 30, py + 202, 14, RENK_SOLUK_METIN);
+    a.rehberBtn.Ciz(14);
+    a.renkKoruBtn.Ciz(14);
+
+    int y = py + 250;
     if (PlatformdaCikisVar()) {
+        YaziCiz(M("PENCERE MODU", "WINDOW MODE"), px + 30, y, 14, RENK_SOLUK_METIN);
         bool tamEkran = IsWindowFullscreen();
         bool kenarsiz = IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE);
         auto secili = [](Buton& b, bool aktif) {
@@ -182,13 +211,10 @@ static void AyarlarCiz(Uygulama& u) {
         secili(a.modTamEkranBtn, tamEkran);
         secili(a.modKenarsizBtn, kenarsiz);
         a.kucultBtn.Ciz(14);
-    } else {
-        YaziCizSarili(M("Tarayıcıda oynuyorsun: tam ekran için sayfadaki tam ekran düğmesini kullan.",
-                        "You are playing in a browser: use the page's fullscreen button for fullscreen."),
-                      px + 30, py + 232, 14, (int)p.width - 60, RENK_METIN, 3, 20);
+        y += 126;
     }
 
-    YaziCiz(M("DİL", "LANGUAGE"), px + 30, py + 332, 14, RENK_SOLUK_METIN);
+    YaziCiz(M("DİL", "LANGUAGE"), px + 30, y, 14, RENK_SOLUK_METIN);
     Color eski = a.dilTrBtn.renk;
     if (g_dil == Dil::TR) a.dilTrBtn.renk = RENK_ALTIN;
     a.dilTrBtn.Ciz(14);
@@ -227,21 +253,42 @@ static void YonetimCiz(Uygulama& u) {
     ModalKarart(0.65f);
     Rectangle p = a.yonPanel;
     PanelCiz(p, 0.05f, RENK_PANEL, RENK_ALTIN);
-    const int px = (int)p.x, py = (int)p.y;
-    YaziCiz(hy.kod + " - " + sablon.baslik.al(), px + 30, py + 22, 22, RENK_ALTIN);
-    YaziCizSarili(sablon.aciklama.al(), px + 30, py + 60, 15, (int)p.width - 60, RENK_METIN, 2, 20);
-    YaziCizSarili(M("Çoğunluk hissesine sahip olduğun şirketin patronu olarak karar sana ait.",
-                    "As the boss of a company you hold a majority stake in, the call is yours."),
-                  px + 30, py + 110, 13, (int)p.width - 60, RENK_SOLUK_METIN, 2, 18);
+    const int kenar = DarEkran() ? 24 : 30;
+    const int px = (int)p.x + kenar, py = (int)p.y, ic = (int)p.width - 2 * kenar;
+    int y = py + 22;
+    y += YaziCizSarili(hy.kod + " - " + sablon.baslik.al(), px, y, 22, ic, RENK_ALTIN, 2, 26) + 10;
+    y += YaziCizSarili(sablon.aciklama.al(), px, y, 15, ic, RENK_METIN, 3, 20) + 8;
+    // Sirketin o anki kirilganligi: riskli kararin tutma sansini bu belirler.
+    {
+        static const IkiDil seviyeAd[3] = {{"DÜŞÜK", "LOW"}, {"ORTA", "MEDIUM"}, {"YÜKSEK", "HIGH"}};
+        const Color seviyeRenk[3] = {RENK_YESIL, RENK_UYARI, RENK_KIRMIZI};
+        int sv = SirketRiskSeviyesi(hy);
+        const char* on = M("Şirket riski: ", "Company risk: ");
+        YaziCiz(on, px, y, 13, RENK_METIN);
+        YaziCiz(seviyeAd[sv].al(), px + YaziOlc(on, 13), y, 13, seviyeRenk[sv]);
+        y += 20;
+    }
+    YaziCizSarili(M("Üst üste risk aldıkça tutma şansı düşer; güvenli kararlar şirketi toparlar.",
+                    "Each gamble makes the next one less likely to pay off; safe choices let the company recover."),
+                  px, y, 13, ic, RENK_SOLUK_METIN, 3, 18);
+
+    // Dugmelerin alt satiri sonucu ACIKCA soyler: oyuncu neyi goze aldigini bilsin.
+    int sans = (int)roundf(YonetimBasariOlasiligi(hy) * 100.0f);
+    string kazanc = Yuzde((sablon.riskli.temelDegerCarpani - 1.0f) * 100.0f, 0, true);
+    string kayip = Yuzde((YonetimBasarisizlikCarpani(sablon.riskli.temelDegerCarpani) - 1.0f) * 100.0f, 0, true);
+    string riskliAlt = (g_dil == Dil::EN) ? to_string(sans) + "% chance:  " + kazanc + "  or  " + kayip
+                                          : "Şans %" + to_string(sans) + ":  " + kazanc + "  ya da  " + kayip;
+    float guvenliEtki = (sablon.guvenli.temelDegerCarpani - 1.0f) * 100.0f;
+    string guvenliAlt = (fabsf(guvenliEtki) < 0.05f)
+                            ? string(M("Kazanç yok, şirket riski azalır", "No gain, company risk falls"))
+                            : string(M("Kesin ", "Certain ")) + Yuzde(guvenliEtki, 0, true) + M(", şirket riski azalır", ", company risk falls");
 
     a.yonRiskliBtn.Ciz(15);
     a.yonGuvenliBtn.Ciz(15);
     DugmeIciYazi(a.yonRiskliBtn, sablon.riskli.etiket.al(), 14, 8, 15, WHITE);
-    DugmeIciYazi(a.yonRiskliBtn, M("Anında kazanç, kalıcı risk artışı", "Instant gain, lasting risk"), 14, 32, 11,
-                 Fade(WHITE, 0.85f));
+    DugmeIciYazi(a.yonRiskliBtn, riskliAlt, 14, 32, 11, Fade(WHITE, 0.9f));
     DugmeIciYazi(a.yonGuvenliBtn, sablon.guvenli.etiket.al(), 14, 8, 15, WHITE);
-    DugmeIciYazi(a.yonGuvenliBtn, M("Az/hiç kazanç, risk artışı yok", "Little or no gain, no added risk"), 14, 32, 11,
-                 Fade(WHITE, 0.85f));
+    DugmeIciYazi(a.yonGuvenliBtn, guvenliAlt, 14, 32, 11, Fade(WHITE, 0.9f));
 }
 
 // ---------------------------------------------------------------------------
@@ -275,11 +322,14 @@ static void CikisOnayiCiz(Uygulama& u) {
     Rectangle p = a.coPanel;
     PanelCiz(p, 0.05f, RENK_PANEL, RENK_ALTIN);
     const int ortaX = (int)(p.x + p.width / 2.0f);
-    YaziCizOrtali(M("ÇIKMAK İSTEDİĞİNE EMİN MİSİN?", "ARE YOU SURE YOU WANT TO QUIT?"), ortaX, (int)p.y + 30, 24, RENK_ALTIN);
-    YaziCizOrtali(M("Son kayıttan sonraki ilerlemen kaybolacak.", "Progress since your last save will be lost."), ortaX,
-                  (int)p.y + 72, 15, RENK_METIN);
+    const int ic = (int)p.width - 40;
+    int y = (int)p.y + 26;
+    y += YaziCizSariliOrtali(M("ÇIKMAK İSTEDİĞİNE EMİN MİSİN?", "ARE YOU SURE YOU WANT TO QUIT?"), ortaX, y, DarEkran() ? 20 : 24, ic,
+                             RENK_ALTIN, 28) + 10;
+    y += YaziCizSariliOrtali(M("Son kayıttan sonraki ilerlemen kaybolacak.", "Progress since your last save will be lost."), ortaX, y,
+                             15, ic, RENK_METIN, 20) + 6;
     string durum = string(M("Net Değer: ", "Net Worth: ")) + Para(o.NetDeger()) + "   |   " + M("Gün ", "Day ") + to_string(o.gun);
-    YaziCizOrtali(durum, ortaX, (int)p.y + 100, 13, RENK_SOLUK_METIN);
+    YaziCizSariliOrtali(durum, ortaX, y, 13, ic, RENK_SOLUK_METIN, 18);
     a.cikisKaydetBtn.Ciz(14);
     a.cikisKaydetmeBtn.Ciz(14);
     a.cikisVazgecBtn.Ciz(14);

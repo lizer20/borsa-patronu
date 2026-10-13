@@ -5,7 +5,7 @@
 // simulasyon pencere acmadan da calistirilabilir (bkz. test/denge_testi.cpp).
 
 // ---- Bekleyen emirler (v2.0) ----
-// Her hissede her turden en fazla BIR emir durur.
+// Her varlikta her turden en fazla BIR emir durur.
 //   STOP       : zarar kes. Uzun pozisyonda fiyat seviyenin ALTINA inince tumunu
 //                satar; acik pozisyonda fiyat seviyenin USTUNE cikinca tumunu kapatir.
 //   KAR_AL     : hedef. STOP'un tersi yonde tetiklenir.
@@ -20,6 +20,10 @@ struct Emir {
     int adet = 0; // sadece LIMIT_ALIM icin; -1 = alinabildigi kadar
 };
 
+// Islem goren bir varlik: HISSE ya da GUVENLI LIMAN (altin/dolar). Ikisi ayni
+// yapida tutulur ki alim/satim, emir, kar/zarar ve kayit kodu ortak olsun;
+// farklar asagidaki parametre alanlarindadir (`liman` bayragi ve arkadaslari).
+// Oyun::hisseler dizisinde once HisseSayisi() kadar hisse, sonra limanlar durur.
 struct Hisse {
     string kod;
     IkiDil tamAd = {"", ""};
@@ -30,8 +34,8 @@ struct Hisse {
     AnimFloat gosterilenFiyat;
     deque<float> gecmis;
 
-    // POZISYON. adet > 0: uzun (elde hisse var). adet < 0: ACIGA SATIS.
-    //   uzun  : maliyet = bu hisselere odenen toplam tutar
+    // POZISYON. adet > 0: uzun (elde var). adet < 0: ACIGA SATIS.
+    //   uzun  : maliyet = odenen toplam tutar
     //   aciga : maliyet = aciga satarken ALINAN toplam tutar (pozitif tutulur)
     // Her iki durumda ortalama fiyat = maliyet / |adet|.
     int adet = 0;
@@ -42,9 +46,20 @@ struct Hisse {
 
     // --- Piyasa modeli ---
     float temelDeger = 0.0f;  // fiyatin etrafinda dolandigi "adil deger"
+    float esasDeger = 0.0f;   // DEGERLEME icin: haberlerin heyecan kismi cikarilmis deger (bkz. temel.h)
     float volatilite = 0.01f; // o anki beyaz gurultu oynakligi (sok sonrasi yukselir, soner)
-    float ozelFaktor = 0.0f;  // hisseye ozgu kalici trend faktoru (AR(1))
-    float akis = 0.0f;        // oyuncunun yakin zamandaki net emir akisi (bkz. temel.h, mikroyapi)
+    float ozelFaktor = 0.0f;  // varliga ozgu kalici trend faktoru (AR(1))
+    float akis = 0.0f;        // oyuncunun yakin zamandaki net emir akisi (mikroyapi)
+
+    // --- Varlik turune gore degisen parametreler ---
+    bool liman = false;               // guvenli liman varligi mi (altin/dolar)
+    float kureselDuyarlilik = 1.0f;   // kuresel olay etkisinin carpani (hissede = beta; limanda EKSI)
+    float kaliciPay = 1.0f;           // kuresel etkinin adil degere kalici yansiyan kismi
+    float ozelOlcek = 1.0f;           // ozel faktorun buyuklugu
+    float volCarpani = 1.0f;          // beyaz gurultu oynakliginin carpani
+    int likidite = TOPLAM_HISSE_SAYISI;   // islem maliyeti olcegi (buyuk = derin piyasa)
+    int azamiAdet = TOPLAM_HISSE_SAYISI;  // en fazla tutulabilecek adet
+    float gunlukSuruklenme = 0.0f;    // adil degerin gunluk ortalama artisi
 
     // --- Devralma (takeover) / yonetim ---
     bool sahibiyim = false;
@@ -52,7 +67,7 @@ struct Hisse {
     float yonetimOlayZamanlayici = 0.0f;
 
     // --- Kademeli acilma ---
-    // Bu hisse hangi rutbe seviyesinde acilir? 0 = oyuna baslarken acik.
+    // Bu varlik hangi rutbe seviyesinde acilir? 0 = oyuna baslarken acik.
     int acilmaSeviyesi = 0;
 
     // --- Emirler ve bilanco takvimi ---
@@ -61,12 +76,34 @@ struct Hisse {
     int bilancoBeklenti = 0; // oyuncuya gosterilen ipucu: +1 olumlu, 0 belirsiz, -1 olumsuz
 };
 
+static int HisseSayisi() { return (int)SIRKETLER.size(); }
+
+// Degerleme orani: 1 = makul, >1 pahali, <1 ucuz. Limanlarda her zaman 1.
+static float Degerleme(const Hisse& h) {
+    if (h.liman || h.esasDeger <= 0.01f) return 1.0f;
+    return h.temelDeger / h.esasDeger;
+}
+
+// 0 KELEPIR, 1 UCUZ, 2 MAKUL, 3 PAHALI, 4 BALON
+static int DegerlemeSeviyesi(const Hisse& h) {
+    float v = Degerleme(h);
+    if (v < DEGERLEME_KELEPIR) return 0;
+    if (v < DEGERLEME_UCUZ) return 1;
+    if (v <= DEGERLEME_PAHALI) return 2;
+    if (v <= DEGERLEME_BALON) return 3;
+    return 4;
+}
+
+enum HaberTuru { HABER_SIRKET = 0, HABER_BILANCO = 1, HABER_INSIDER = 2, HABER_DUZELTME = 3 };
+
 // Duyurulmus ama henuz fiyata yansimamis haber
 struct BeklemedeHaber {
     int hisseIndex;
     float carpan;
     string metin;
     float kalanSure;
+    int tur = HABER_SIRKET; // KAYDEDILMEZ (yuklenen bekleyen haber duz haber sayilir)
+    bool oyuncuAldi = false; // haber duyurulduktan SONRA oyuncu bu hisseyi aldi mi (gorev icin; kaydedilmez)
 };
 
 // Duyurulmus ama henuz piyasaya yansimamis KURESEL olay
@@ -95,16 +132,28 @@ static int BilancoBeklentiUret(float acemiKoruma) {
     return -1;
 }
 
+// Bugunun tarihi YYYYAAGG tam sayisi olarak (Gunun Piyasasi senaryosunun tohumu).
+// Testler g_tarihZorla ile sabit bir gun verebilir.
+static int g_tarihZorla = 0;
+static int BugunTarih() {
+    if (g_tarihZorla > 0) return g_tarihZorla;
+    time_t simdi = time(nullptr);
+    struct tm* yerel = localtime(&simdi);
+    if (yerel == nullptr) return 20260101;
+    return (yerel->tm_year + 1900) * 10000 + (yerel->tm_mon + 1) * 100 + yerel->tm_mday;
+}
+
 struct Oyun {
     bool duraklatildi = false;
     int senaryo = S_KLASIK;
+    int gunlukTarih = 0; // Gunun Piyasasi oyununun tohum tarihi (YYYYAAGG); digerlerinde 0
 
     float bakiye = BASLANGIC_BAKIYE;
     float borc = 0.0f; // kredi borcu
     AnimFloat gosterilenNetDeger;
     AnimFloat gosterilenBakiye;
 
-    vector<Hisse> hisseler;
+    vector<Hisse> hisseler; // once hisseler, sonra guvenli limanlar
     vector<BeklemedeHaber> bekleyenHaberler;
     vector<BeklemedeKuresel> bekleyenKureselHaberler;
 
@@ -146,9 +195,20 @@ struct Oyun {
     int teminatCagrisiSayisi = 0;
     float enDusukNetDeger = BASLANGIC_BAKIYE; // "Kullerinden Dogan" basarimi icin
     float enYuksekBorc = 0.0f;                // "Kaldirac Ustasi" basarimi icin (borc kapaninca sifirlanir)
+    vector<float> netGecmisi;                 // her oyun gununun sonundaki net deger (grafik icin)
 
     int sonTemettuGunu = 0;
-    bool normalizeGrafik = false; // grafik ekseni: false = TL, true = %
+    // Ana grafik: 0 = TL ekseni, 1 = yuzde ekseni, 2 = net deger gecmisi.
+    int grafikModu = 0;
+
+    // --- Gorev (v2.1; mantik gorev.h icinde) ---
+    int gorevTur = 0;          // 0 = su an gorev yok
+    float gorevHedef = 0.0f;   // gorevin sayisal hedefi (tutar ya da adet)
+    float gorevOdul = 0.0f;
+    int gorevBitisGunu = 0;    // bu gunden sonra gorev suresi dolar
+    float gorevBekleme = GOREV_ILK_BEKLEME_SN; // yeni gorev gelmeden onceki bekleme
+    int sonGorevTur = 0;       // ayni gorev ust uste gelmesin
+    int tamamlananGorev = 0;
 
     // --- Iceriden bilgi (insider) mektubu ---
     float insiderSayaci = 0.0f;
@@ -187,6 +247,13 @@ struct Oyun {
         senaryo = senaryoId;
         const Senaryo& sen = Sen();
 
+        // Gunun Piyasasi: o gun oynayan herkes ayni tohumla baslar.
+        gunlukTarih = 0;
+        if (sen.gunluk) {
+            gunlukTarih = BugunTarih();
+            SimTohumla((uint64_t)gunlukTarih);
+        }
+
         hisseler.clear();
         for (auto& s : SIRKETLER) {
             Hisse h;
@@ -195,16 +262,11 @@ struct Oyun {
             h.renk = s.renk;
             h.sektor = s.sektor;
             h.beta = s.beta;
-            h.fiyat = s.baslangicFiyat;
-            h.oncekiFiyat = s.baslangicFiyat;
-            h.temelDeger = s.baslangicFiyat;
-            h.volatilite = fminf(VOL_TAVAN, BASE_VOLATILITE + sen.baslangicRiskPrimi);
-            h.gosterilenFiyat.Zorla(s.baslangicFiyat);
-            h.gosterilenFiyat.hiz = 6.0f;
-            for (int i = 0; i < GECMIS_UZUNLUK; i++) h.gecmis.push_back(s.baslangicFiyat);
+            h.kureselDuyarlilik = s.beta;
+            h.ozelOlcek = OZEL_OLCEK_TABAN + OZEL_OLCEK_EGIM * s.beta;
+            h.fiyat = h.oncekiFiyat = h.temelDeger = h.esasDeger = s.baslangicFiyat;
             hisseler.push_back(h);
         }
-
         // Acilma sirasi: baslangic fiyatina gore artan (0 = en ucuz, oyuna baslarken acik).
         {
             vector<int> sirali(hisseler.size());
@@ -215,10 +277,32 @@ struct Oyun {
             for (size_t sira = 0; sira < sirali.size(); sira++)
                 hisseler[sirali[sira]].acilmaSeviyesi = (int)sira;
         }
-
-        // Ilk bilanco tarihleri: hisseler ust uste binmesin diye kaydirilmis.
+        for (auto& l : LIMANLAR) {
+            Hisse h;
+            h.liman = true;
+            h.kod = l.kod;
+            h.tamAd = l.tamAd;
+            h.renk = l.renk;
+            h.beta = l.beta;
+            h.kureselDuyarlilik = l.kureselDuyarlilik;
+            h.kaliciPay = l.kaliciPay;
+            h.ozelOlcek = l.ozelOlcek;
+            h.volCarpani = l.volCarpani;
+            h.likidite = l.likidite;
+            h.azamiAdet = l.azamiAdet;
+            h.gunlukSuruklenme = l.gunlukSuruklenme;
+            h.fiyat = h.oncekiFiyat = h.temelDeger = h.esasDeger = l.baslangicFiyat;
+            h.acilmaSeviyesi = LIMAN_MIN_RUTBE;
+            hisseler.push_back(h);
+        }
         for (auto& h : hisseler) {
-            h.bilancoGunu = 5 + h.acilmaSeviyesi * 2 + GetRandomValue(0, 3);
+            h.volatilite = fminf(VOL_TAVAN, BASE_VOLATILITE + sen.baslangicRiskPrimi);
+            h.gosterilenFiyat.Zorla(h.fiyat);
+            h.gosterilenFiyat.hiz = 6.0f;
+            for (int i = 0; i < GECMIS_UZUNLUK; i++) h.gecmis.push_back(h.fiyat);
+            // Ilk bilanco tarihleri: hisseler ust uste binmesin diye kaydirilmis.
+            // (Limanlarin bilancosu yok ama rastgele akis ayni kalsin diye yine cekilir.)
+            h.bilancoGunu = 5 + h.acilmaSeviyesi * 2 + RastgeleInt(0, 3);
             h.bilancoBeklenti = BilancoBeklentiUret(sen.acemiKorumasi ? 1.0f : 0.0f);
         }
 
@@ -253,7 +337,15 @@ struct Oyun {
         teminatCagrisiSayisi = 0;
         enDusukNetDeger = bakiye;
         enYuksekBorc = 0.0f;
+        netGecmisi.clear();
+        netGecmisi.push_back(bakiye);
         sonTemettuGunu = 0;
+        gorevTur = 0;
+        gorevHedef = gorevOdul = 0.0f;
+        gorevBitisGunu = 0;
+        gorevBekleme = GOREV_ILK_BEKLEME_SN;
+        sonGorevTur = 0;
+        tamamlananGorev = 0;
         insiderSayaci = 0.0f;
         insiderMektupVar = false;
         insiderMektupOmur = 0.0f;
@@ -284,14 +376,6 @@ struct Oyun {
         return toplam;
     }
 
-    // Sadece uzun pozisyonlarin degeri (portfoy ozeti icin).
-    float UzunDeger() const {
-        float toplam = 0.0f;
-        for (auto& h : hisseler)
-            if (h.adet > 0) toplam += h.fiyat * h.adet;
-        return toplam;
-    }
-
     // Aciga satilan hisselerin guncel degeri (pozitif; geri alma yukumlulugu).
     float AcigaDegeri() const {
         float toplam = 0.0f;
@@ -318,11 +402,20 @@ struct Oyun {
     bool EmirlerAcik() const { return rutbeIndex >= EMIR_MIN_RUTBE; }
     bool AcigaSatisAcik() const { return rutbeIndex >= ACIGA_MIN_RUTBE; }
     bool KrediAcik() const { return rutbeIndex >= KREDI_MIN_RUTBE; }
+    bool LimanlarAcik() const { return rutbeIndex >= LIMAN_MIN_RUTBE; }
 
     int SahipOlunanSirketSayisi() const {
         int n = 0;
         for (auto& h : hisseler)
             if (h.sahibiyim) n++;
+        return n;
+    }
+
+    // Su an pozisyon tutulan (uzun ya da aciga) farkli varlik sayisi.
+    int PozisyonSayisi() const {
+        int n = 0;
+        for (auto& h : hisseler)
+            if (h.adet != 0) n++;
         return n;
     }
 };

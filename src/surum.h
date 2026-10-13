@@ -8,8 +8,8 @@
 #define BORSA_SURUM_H
 
 #define SURUM_ANA 2
-#define SURUM_ALT 0
-#define SURUM_METIN "v2.0"
-#define SURUM_DOSYA_METIN "2.0.0.0"
+#define SURUM_ALT 1
+#define SURUM_METIN "v2.1"
+#define SURUM_DOSYA_METIN "2.1.0.0"
 
 #endif

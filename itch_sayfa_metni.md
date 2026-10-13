@@ -4,7 +4,9 @@
 
   YUKLEME:
     release/BorsaPatronu-vX.Y-web.zip   -> "This file will be played in the browser"
-                                           Embed: 1280 x 720, "Fullscreen button" acik
+                                           Embed: 1280 x 720, "Fullscreen button" ve
+                                           "Mobile friendly" acik (oyun her cerceve
+                                           boyutuna uyar; telefonda dikey yerlesim)
     release/BorsaPatronu-vX.Y-win64.zip -> platform: Windows
   Ikisini birden yuklersen sayfa tarayicida oynanir, isteyen indirir.
 -->
@@ -15,7 +17,8 @@
 akıyor, haberler tek tek düşüyor. Hedef basit ama kolay değil — 250.000 TL'ye
 ulaşıp **Efsane Yatırımcı** olmak.
 
-**Tarayıcıda hemen oyna** ya da Windows sürümünü indir. Türkçe ve İngilizce.
+**Tarayıcıda hemen oyna** (telefonda da) ya da Windows sürümünü indir. Türkçe ve
+İngilizce.
 
 ## Haberi okumak için 5 saniyen var
 
@@ -36,11 +39,20 @@ yoksa sakin sakin mi? Sürekli al-sat çevirmek ise sadece para kaybettirir.
 
 - **Emirler** — zarar kes, kâr al, limit alım. Ekrana bakmadığında da korunursun.
 - **Açığa satış** — kötü haberden de kazan. Zarar sınırsızdır, dikkat.
+- **Altın ve dolar** — kötü küresel haberlerde yükselen güvenli limanlar. Büyümek
+  için değil, fırtınada korunmak için.
 - **Kredi** — kazanç da zarar da büyür. Teminat oranın düşerse pozisyonların
   zorla kapatılır; daha da kötüsü iflas edersin.
 - **Bilanço takvimi** — tarih belli, sonuç değil. Beklenti fiyatlanmıştır;
   asıl hareketi sürpriz yaratır.
 - **İçeriden bilgi mektupları** — nadir, kısa ömürlü, değerli.
+
+## Pahalı hisse risklidir
+
+Her hissenin yanında bir değerleme etiketi durur: **KELEPİR, UCUZ, MAKUL, PAHALI,
+BALON.** Çok yükselen hisse pahalılaşır; pahalı hisseye iyi haber gelmesi zorlaşır,
+balona dönerse düzeltme kapıdadır. Ucuzlayan hissede ise tersine toparlanma
+olasılığı büyür. "Aldım, unuttum" artık zirveye taşımıyor — etiketi okuyan kazanır.
 
 ## Şirketi topla, patronu ol
 
@@ -51,7 +63,9 @@ kararları sana gelmeye başlar.
 > *Örtbas Et* — kısa vadede rahatlarsın, skandal riski tavan yapar.
 > *Şeffaf Ol ve Düzelt* — küçük bir maliyet, artan güven.
 
-Riskli seçenek anında kazandırır ama o hisseye **kalıcı** bir oynaklık bırakır.
+Riskli seçenek bir **kumardır**: tutarsa hisse sıçrar, tutmazsa çakılır — ve şansın
+düğmenin üstünde yazar. Üst üste risk aldıkça şirket kırılganlaşır, şans düşer;
+güvenli kararlar şirketi toparlar. Sağlamken bas, kırılganken dinlendir.
 
 ## Piyasa zamanla vahşileşiyor
 
@@ -62,19 +76,25 @@ başladığın günkünden gözle görülür şekilde daha serttir.
 
 ## Öne çıkanlar
 
-- **4 senaryo:** Klasik, Kriz Yılı, Zamana Karşı (45 gün), Sıfırdan Zirveye —
-  her birinin kendi rekoru.
-- **15 başarım** ve oyun sonu özeti.
+- **Günün Piyasası:** her gün yeni bir piyasa ve o gün **herkes aynısını** oynuyor.
+  30 günün sonunda skorunu kopyala, arkadaşına gönder: aynı piyasada o ne yaptı?
+- **5 senaryo:** Klasik, Kriz Yılı, Zamana Karşı (45 gün), Sıfırdan Zirveye, Günün
+  Piyasası — her birinin kendi rekoru.
+- **Görevler:** rütbeler arasında seni yeni araçları denemeye iten kısa hedefler ve
+  nakit ödüller.
+- **18 başarım** ve oyun sonu özeti.
 - **Gerçekçi ama okunabilir piyasa:** hisseler hem ortak piyasa modundan hem
   kendi trendlerinden etkilenir; çeşitlendirme gerçekten işe yarar.
 - İlk oyunda kısa bir **rehber**.
-- Kaydet/yükle, temettü, klavye kısayolları, tam ekran.
-- **Kurulum yok, tek dosya.** Ses efektleri ve Türkçe harfler dahil her şey
+- Kaydet/yükle, temettü, net değer grafiği, klavye kısayolları, tam ekran.
+- **Her ekrana uyar:** geniş monitörde yanlarda boşluk kalmaz, telefonda dikey
+  yerleşime geçer. Renk körü modu var.
+- **Kurulum yok, tek dosya.** Ses efektleri, müzik ve Türkçe harfler dahil her şey
   kodla üretiliyor.
 
 ## Nasıl oynanır
 
-Her şey fare ile: kartlardaki AL / SAT düğmeleri, altında işlem adedi.
+Her şey fare (ya da parmak) ile: kartlardaki AL / SAT düğmeleri, altında işlem adedi.
 **Boşluk** duraklatır, **1–8** işlem adedini seçer, **M** sesi açıp kapatır.
 
 ## Sistem gereksinimleri
@@ -103,8 +123,8 @@ You start with 10,000 TL and a live market: prices move while you watch and news
 drops one item at a time. The goal is simple but not easy — reach 250,000 TL and
 become a **Legendary Investor**.
 
-**Play right now in your browser**, or download the Windows build. English and
-Turkish.
+**Play right now in your browser** (phones too), or download the Windows build.
+English and Turkish.
 
 ## You have 5 seconds to read the news
 
@@ -126,11 +146,21 @@ money.
 
 - **Orders** — stop-loss, take profit, limit buy. Stay protected while you look away.
 - **Short selling** — profit from bad news too. Losses are unlimited, so careful.
+- **Gold and dollars** — safe havens that rise on bad global news. Not for growth;
+  for shelter in a storm.
 - **Credit** — bigger gains, bigger losses. Let your margin ratio slip and your
   positions are force-closed; go further and you are bankrupt.
 - **Earnings calendar** — the date is known, the result is not. Expectations are
   priced in; the surprise is what moves the stock.
 - **Insider letters** — rare, short-lived, valuable.
+
+## Pricey stocks are risky
+
+Every stock carries a valuation tag: **BARGAIN, CHEAP, FAIR, PRICEY, BUBBLE.** A
+stock that has run up gets pricey; good news becomes harder to come by, and once it
+is a bubble a correction is around the corner. A stock that has been beaten down is
+the opposite: a rebound gets likelier. "Buy and forget" no longer carries you to the
+top — reading the tag does.
 
 ## Collect a company, become the boss
 
@@ -141,8 +171,10 @@ management decisions start landing on your desk.
 > *Cover It Up* — short-term relief, scandal risk through the roof.
 > *Come Clean and Fix It* — a small cost, growing trust.
 
-The risky option pays off instantly but leaves that stock **permanently** more
-volatile.
+The risky option is a **gamble**: if it works the stock jumps, if it fails it
+drops — and your odds are written right on the button. Every gamble makes the
+company more fragile and the next one less likely to pay off; safe choices let it
+recover. Push when it is solid, rest it when it is brittle.
 
 ## The market gets wilder over time
 
@@ -153,20 +185,27 @@ than on day one.
 
 ## Features
 
-- **4 scenarios:** Classic, Crisis Year, Against the Clock (45 days), Rags to
-  Riches — each with its own record.
-- **15 achievements** and an end-of-game summary.
+- **Daily Market:** a new market every day, and that day **everyone plays the same
+  one**. After 30 days copy your score and send it to a friend: how did they do in
+  the very same market?
+- **5 scenarios:** Classic, Crisis Year, Against the Clock (45 days), Rags to
+  Riches, Daily Market — each with its own record.
+- **Missions:** short goals between ranks that nudge you to try new tools, with
+  cash rewards.
+- **18 achievements** and an end-of-game summary.
 - **A realistic but readable market:** stocks follow both a shared market mood and
   their own trends, so diversification actually matters.
 - A short **guide** in your first game.
-- Save/load, dividends, keyboard shortcuts, fullscreen.
-- **No install, one file.** Everything — sound effects included — is generated in
-  code.
+- Save/load, dividends, a net-worth chart, keyboard shortcuts, fullscreen.
+- **Fits any screen:** no side bars on wide monitors, a portrait layout on phones.
+  Colorblind mode included.
+- **No install, one file.** Everything — sound effects and music included — is
+  generated in code.
 
 ## How to play
 
-Mouse only: BUY / SELL on each card, trade size below. **Space** pauses, **1–8**
-picks the trade size, **M** toggles sound.
+Mouse (or finger) only: BUY / SELL on each card, trade size below. **Space** pauses,
+**1–8** picks the trade size, **M** toggles sound.
 
 ## Requirements
 

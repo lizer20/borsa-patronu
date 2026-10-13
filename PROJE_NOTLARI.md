@@ -7,14 +7,18 @@ asistanı) önce bunu okumalı.
 ## Ne bu proje
 
 C++17 + raylib ile yazılmış bir borsa yönetim oyunu. Oyuncu 6 hisseyi (ASELS, THYAO,
-GARAN, EREGL, KCHOL, BIMAS — gerçek BIST kodları, fiyatlar tamamen simüle) alıp
-satar; haberler, küresel olaylar ve bilançolar fiyatları oynatır; rütbe atladıkça
-yeni hisseler ve araçlar (emirler, açığa satış, kredi) açılır; bir şirketin %50+1'ini
-toplayan patronu olur ve yönetim kararları verir.
+GARAN, EREGL, KCHOL, BIMAS — gerçek BIST kodları, fiyatlar tamamen simüle) ve iki
+güvenli limanı (altın, dolar) alıp satar; haberler, küresel olaylar ve bilançolar
+fiyatları oynatır; rütbe atladıkça yeni hisseler ve araçlar (emirler, açığa satış,
+güvenli limanlar, kredi) açılır; bir şirketin %50+1'ini toplayan patronu olur ve
+yönetim kararları verir. Aradaki boşluğu kısa görevler doldurur.
 
 - **İki dil:** Türkçe ve İngilizce (ilk açılışta sistem diline göre, menüden değişir).
 - **İki platform:** Windows `.exe` ve tarayıcı (WebAssembly) — aynı kaynaktan.
-- **Asset yok:** ses efektleri, ikon, kapak görseli ve Türkçe harfler kodla üretilir.
+  Tarayıcı sürümü telefonda da oynanır (dikey yerleşim).
+- **Her pencereye uyar:** sahne pencerenin en-boy oranına göre boyutlanır; yanlarda
+  siyah boşluk kalmaz (bkz. Arayüz kuralları).
+- **Asset yok:** ses efektleri, müzik, ikon, kapak görseli ve Türkçe harfler kodla üretilir.
 - Değişken/fonksiyon adları ve yorumlar bilerek Türkçe (ASCII Türkçe).
 
 **TASARIM HEDEFİ (kullanıcının sözüyle):** piyasa "en gerçekçi ama aynı zamanda da
@@ -43,25 +47,27 @@ ayrılmış durumda.
 | Dosya | İçerik |
 |---|---|
 | `src/surum.h` | **Sürüm numarası — tek kaynak** (oyun, `.rc` ve `build.py` buradan okur) |
-| `src/temel.h` | **Denge sabitlerinin tamamı**, renk paleti, matematik yardımcıları |
-| `src/platform.h` | Masaüstü/web farkları: dosya ↔ `localStorage`, sistem dili |
+| `src/temel.h` | **Denge sabitlerinin tamamı**, sahne boyutu kuralları, renk paleti, simülasyonun rastgele sayı üreteci |
+| `src/platform.h` | Masaüstü/web farkları: dosya ↔ `localStorage`, sistem dili, tuval boyutu, tık kuyruğu |
 | `src/dil.h` | İki dilli metin (`M()`, `IkiDil`), Türkçe harfli font, yazı çizimi, sayı biçimleri |
-| `src/ses.h` | Prosedürel ses efektleri |
+| `src/ses.h` | Prosedürel ses efektleri ve müzik |
 | `src/efekt.h` | Parçacık, toast, buton, ortak çizim yardımcıları |
 | `src/veri.h` | **İçerik tabloları:** şirketler, haberler, olaylar, rütbeler, senaryolar, başarımlar, rehber |
 | `src/oyun.h` | Oyun durumu (`Hisse`, `Oyun`) — arayüzden bağımsız |
-| `src/profil.h` | Başarımlar, rekorlar, dil tercihi (`borsa_profil.sav`) |
+| `src/profil.h` | Başarımlar, rekorlar, günün skoru, tercihler (`borsa_profil.sav`) |
+| `src/gorev.h` | Görevler: türler, metinler, ne zaman verilir, nasıl tamamlanır |
 | `src/piyasa_islem.h` | Alım/satım ve işlem maliyeti (mikroyapı) |
 | `src/piyasa_kaldirac.h` | Bekleyen emirler, kredi, teminat çağrısı, iflas |
-| `src/piyasa_olay.h` | Fiyat simülasyonu, haberler, bilanço, rütbe ilerlemesi |
-| `src/piyasa_sim.h` | Gün döngüsü, temettü, rehber, `SimulasyonAdimi()` |
+| `src/piyasa_olay.h` | Fiyat simülasyonu, haberler, değerleme, bilanço, rütbe ilerlemesi |
+| `src/piyasa_sim.h` | Gün döngüsü, temettü, yönetim kararları, rehber, `SimulasyonAdimi()` |
 | `src/kayit.h` | Kaydet / yükle (`borsa_kayit.sav`) |
-| `src/arayuz_temel.h` | Arayüz veri yapıları ve **sabit yerleşim** (`ArayuzKur`) |
+| `src/arayuz_temel.h` | Arayüz veri yapıları ve **yerleşimin tamamı** (`ArayuzKur`: yatay, dikey, pencereler, menüler) |
 | `src/arayuz_oyun.h` | Etiketler, üst bar, haber bandı, hisse kartları, adet paneli |
-| `src/arayuz_grafik.h` | Ana grafik, rehber katmanı, oyun alanının girdisi |
+| `src/arayuz_grafik.h` | Ana grafik (üç mod), görev satırı, güvenli liman kartları, rehber, yatay oyun alanının girdisi |
+| `src/arayuz_dikey.h` | **Dikey (telefon) oyun ekranı:** üst bar, varlık seçici, tek büyük kart |
 | `src/arayuz_pencere*.h` | Pencereler: duraklatma, ayarlar, yönetim, çıkış, emir, kredi, oyun sonu |
 | `src/arayuz_menu.h` | Ana menü, senaryo seçimi, başarımlar |
-| `src/uygulama.h` | Pencere, girdi ve kare döngüsü |
+| `src/uygulama.h` | Pencere, sahne boyutunun seçimi, girdi, sabit adımlı kare döngüsü |
 | `test/denge_testi.cpp` + `denge_botlari.h` | Penceresiz denge ve suistimal testi |
 | `test/gorsel_test.cpp` | Ekran görüntüsü + yerleşim denetçisi + tıklama testi |
 | `web/kabuk.html` | Web sürümünün sayfa kabuğu |
@@ -101,46 +107,86 @@ sürüm bilerek sabittir (hiçbir yerde gösterilmez).
 
 ## Testler
 
-### Denge testi (`test/denge_testi.cpp`) — pencere açmaz, ~8 sn
+### Denge testi (`test/denge_testi.cpp`) — pencere açmaz, ~12 sn
 
 1. **Suistimal testleri:** fiyat sabitken al-sat döngüleri (toplu, parçalı, beklemeli,
-   açığa satışlı, kredili, 300 rastgele dizi). Hepsi ≤ 0 olmalı; biri artıya geçerse
-   test başarısız olur.
+   açığa satışlı, kredili, altın/dolar üzerinden, 300 rastgele dizi). Hepsi ≤ 0
+   olmalı; biri artıya geçerse test başarısız olur.
 2. **Piyasa istatistikleri:** hisse başına tik oynaklığı, adil değerden sapma,
-   hisseler arası korelasyon.
-3. **Bot turnuvası:** 6 bot × 120 oyun; her rütbeye ulaşma oranı ve medyan gün.
+   hisseler arası korelasyon, güvenli limanların hisse endeksiyle (eksi) korelasyonu.
+3. **Bot turnuvası:** 7 bot × 120 oyun; her rütbeye ulaşma oranı ve medyan gün.
+4. **Belirlenim:** aynı tohum birebir aynı oyunu veriyor mu; "Günün Piyasası"nda üç
+   farklı bot aynı küresel olayları görüyor mu.
+5. **Devralma deneyi:** yönetim kararlarındaki tutumların (hep riskli / hep güvenli /
+   şansa bakan / rastgele / hiç devralmayan) sıralaması doğru mu.
 
-**Bir denge sabitini (`src/temel.h`) değiştirdiğinde bu tabloyu öncekiyle karşılaştır.**
-v2.0 referans değerleri (Klasik, rütbeye ulaşılan medyan gün):
+**Bir denge sabitini (`src/temel.h`) değiştirdiğinde bu tabloları öncekiyle karşılaştır.**
+v2.1 referans değerleri (Klasik, rütbeye ulaşılan medyan gün):
 
 | Bot | R1 | R2 | R3 | R4 | Zirve | Not |
 |---|---|---|---|---|---|---|
-| Tutucu (al-tut) | 6 | 20 | 51 | 96 | 169 (%81) | hiç satmaz |
-| Haberci | 10 | 27 | 45 | 71 | 100 | haberi %85 isabetle, anında oynar |
-| Haberci+K | 10 | 27 | 46 | 61 | 84 | kredi ve açığa satış da kullanır |
-| Rastgele | 12 | 36 | 79 | 138 | 244 (%53) | dikkatsiz oyuncu |
-| Çevirici | – | – | – | – | – | sürekli al-sat: 10.000 → ~3.400 TL |
-| Pompacı | – | – | – | – | – | parçalı al/toplu sat: 10.000 → ~10.300 TL |
+| Tutucu (al-tut) | 6 | 22 | 55 | 109 | 219 (%48) | hiç satmaz |
+| Değerci | 6 | 22 | 57 | 108 | 167 (%68) | al-tut, ama PAHALI/BALON olanı satar, ucuzu alır |
+| Haberci | 10 | 25 | 46 | 74 | 107 | haberi %85 isabetle, anında oynar |
+| Haberci+K | 9 | 26 | 43 | 61 | 80 | kredi, açığa satış ve güvenli liman da kullanır |
+| Rastgele | 11 | 37 | 83 | 164 | 248 (%28) | dikkatsiz oyuncu |
+| Çevirici | – | – | – | – | – | sürekli al-sat: 10.000 → ~3.900 TL |
+| Pompacı | – | – | – | – | – | parçalı al/toplu sat: 10.000 → ~10.800 TL |
 
-(Bir oyun günü 18 sn; 100 gün = 30 dk.) Aynı botlar v1.1 kodunda: Tutucu 158,
-Haberci 94, Rastgele 230 — yani **v2.0 zorluğu v1.1 ile aynı**. Tek fark Pompacı:
-v1.1'de oyunların %80'inde zirveye çıkıyordu (açık), v2.0'da yerinde sayıyor.
-Senaryolar (Haberci): Klasik 110, Kriz Yılı 182, Sıfırdan Zirveye 126 gün.
+(Bir oyun günü 18 sn; 100 gün = 30 dk.) **v2.0 ile karşılaştırma:** Tutucu 169 (%81),
+Haberci 100, Rastgele 244 (%53) idi. Yani ilk üç rütbe (oyunun başı) aynı kaldı,
+haberi okuyan oyuncu aynı hızda; değişen tek şey **hiçbir şey yapmadan beklemenin**
+artık zirveye taşımaması (bkz. Değerleme). Senaryolar (Haberci): Klasik 110, Kriz
+Yılı 199 (%83), Sıfırdan Zirveye 123 gün.
 
-### Görsel test + yerleşim denetçisi (`test/gorsel_test.cpp`)
+Devralma deneyi (30.000 TL ile en ucuz şirketin 501 hissesi, başka hiçbir şey
+yapmadan; 60. gündeki medyan net değer):
 
-Oyunu gizli pencerede açar, 34 sahneyi **iki dilde** çizer (`test/cikti/*.png`) ve
-çizilen her yazı/düğme/panelin kutusunu karşılaştırıp şunları raporlar:
+| Tutum | Net @60 gün | Zirve (150 günde) |
+|---|---|---|
+| Şansa bakan (şans ≥ %55 ise riskli) | 97.000 | %69, medyan 90 gün |
+| Hep güvenli | 72.000 | %31 |
+| Rastgele | 56.000 | %18 |
+| Hiç devralmayan (400 hisse tutar) | 51.000 | %4 |
+| Hep riskli | 20.000 | %0 |
+
+(v2.0'da "hep riskli" aynı deneyde oyunların **%100'ünde, medyan 29 günde** zirveye
+çıkıyordu — bkz. Devralma ve yönetim kararları.)
+
+### Görsel test + yerleşim denetçisi (`test/gorsel_test.cpp`) — ~100 sn
+
+Oyunu gizli pencerede açar, 53 sahneyi **8 sahne boyutunda ve iki dilde** çizer
+(848 kare) ve çizilen her yazı/düğme/panelin kutusunu karşılaştırıp şunları raporlar:
 
 - üst üste binen yazılar, bir düğmenin üstüne binen yazı,
 - panelinden ya da ekrandan taşan yazı, düğmesine sığmayan etiket.
 
-Denetçi önce **kendini sınar** (5 kasıtlı hatanın 5'ini yakalamalı). Ardından sahte
-tıklamalarla 40 adımlık bir etkileşim testi koşar (al/sat, duraklatma, emir, açığa
-satış, kredi, teminat çağrısı, kayıt gidiş-dönüş, eski V4 kaydı, bozuk dosya).
+Boyutlar: yatay 1280×720, geniş 1680×720, en geniş 1920×720, kare 1280×960; dikey
+480×900, 480×1000, 480×1180 ve tablet 720×900. Beşinin PNG'si de kaydedilir
+(`test/cikti/tr_y_…`, `_g_`, `_k_`, `_d_`, `_t_`); uç boyutlar yalnızca denetlenir.
+**Uç boyutlar süs değil:** ilk çalıştırmada üç gerçek hatayı yalnızca onlar yakaladı
+(kare pencerede 5 kartın yazıları düğmelere biniyordu, 900 px'lik telefonda senaryo
+listesi "Geri" düğmesinin üstüne taşıyordu, tablette bir etiket düğmesine sığmıyordu).
 
-**Yeni bir ekran/pencere eklediğinde `Sahneler()` içine bir sahne ekle.** v1.0'da
-elle bulunan üç çakışmanın üçünü de bu denetçi kendiliğinden yakalar.
+Denetçi önce **kendini sınar** (5 kasıtlı hatanın 5'ini yakalamalı). Ardından sahte
+tıklamalarla 67 adımlık bir etkileşim testi koşar: yatayda al/sat, rehber, grafik
+modları, duraklatma, ayarlar (dil, renk koru, müzik), emir, açığa satış, güvenli
+liman, kredi, teminat çağrısı, görev ödülü, kayıt gidiş-dönüş (V6), eski V5 ve V4
+kayıtları, bozuk dosyalar, yönetim kararı; dikeyde varlık seçme, al/sat, emir,
+güvenli liman, duraklatma.
+
+**Yeni bir ekran/pencere eklediğinde `Sahneler()` içine bir sahne ekle.**
+
+**Denetçinin göremedikleri (elle bak):** bildirimler (toast) ve farklı katmanlardaki
+kutular karşılaştırılmaz. v2.1'de PNG'lere gözle bakınca denetçinin kaçırdığı üç
+kusur bulundu: dikeyde duraklatma istatistikleri panelin dışında, karartılmış oyun
+ekranının üstünde duruyordu; görev metni "…" ile kırpılıyordu (kırpılan yazı taşmaz,
+o yüzden hata sayılmaz); bildirimler rehber kutusunu örtüyordu. **Yeni bir yerleşim
+eklediğinde testin temiz çıkması yetmez; PNG'leri aç.**
+
+**Sabit adım tuzağı:** simülasyon 0,05 sn'lik adımlarla ilerler; iki kare (1/30 sn)
+bir adım etmez. Testte durumu değiştirdikten sonra düğme konumu okuyacaksan önce
+`Kareler(u, 12)` ile en az bir adım geçir (rütbe atlayışı kart yerleşimini değiştirir).
 
 `BORSA_TEST` tanımlıyken `YaziCiz`, `Buton::Ciz` ve `PanelCiz` kutularını kaydeder;
 normal derlemede bu kodun hiçbir maliyeti yoktur. Veriye bağlı ya da bilerek taşan
@@ -170,6 +216,25 @@ Her saniye, her hisse için:
 - Oynaklık kümelenmesi: büyük hareket sonrası oynaklık sıçrar, yavaşça söner. Taban =
   baz + hissenin risk primi (riskli yönetim kararları) + küresel risk primi (kötü
   küresel olaylar). İkisi de **kalıcıdır**: oyun ilerledikçe piyasa sertleşir.
+
+### Belirlenim: kendi rastgele sayı üreteci ve sabit adım (v2.1)
+
+- Simülasyon raylib'in `GetRandomValue`'sunu **kullanmaz**; `temel.h` içindeki kendi
+  üretecini (`Rng`, xorshift64*) kullanır. İki akış vardır:
+  - `g_rngPiyasa` — **ortam:** fiyat gürültüsü, haberler, küresel olaylar, bilançolar.
+  - `g_rngOyuncu` — **oyuncuya bağlı** çekilişler: yönetim kararının sonucu ve
+    zamanlaması, içeriden bilgi mektubu, görev seçimi.
+  Ayrımın sebebi: oyuncunun yaptıkları ortam akışından çekiliş "çalmasın". Ortam
+  akışından çekiliş yapan her kod, oyuncunun durumundan **bağımsız sayıda** çekiliş
+  yapmak zorundadır (ör. `AgirlikliOlaySec` her zaman 2 kez çeker, bilanço çekilişleri
+  koşulsuzdur). Yeni bir rastgele olay eklerken buna dikkat et; denge testinin 4.
+  bölümü bozulursa bunu ihlal etmişsindir.
+- `SimulasyonAdimi` her zaman `SIM_ADIM_SN` (0,05 sn) ile çağrılır; kare süresi
+  biriktirilip eşit adımlarla harcanır (`OyunEkraniGuncelle`). Kare hızı ne olursa
+  olsun aynı tohum aynı piyasayı verir.
+- Üreteçlerin durumu kayda yazılır: "kaydet – dene – beğenmezsen geri yükle" ile bir
+  yönetim kumarının ya da haberin sonucu değiştirilemez.
+- raylib'in üreteci yalnızca görsel efektlerde (parçacıklar) kullanılır.
 
 ### İşlem maliyeti / mikroyapı (v2.0: akış tabanlı)
 
@@ -211,6 +276,68 @@ Her saniye, her hisse için:
   oyunun zor sonunu belirler. Bu yüzden `veri.h`'ye haber eklemek dengeyi değil
   yalnızca çeşitliliği değiştirir. "Kriz Yılı" senaryosunda koruma kapalıdır.
 
+### Değerleme (v2.1) — "pahalı hisse risklidir"
+
+**Sorun (ölçüldü):** hiç satmayan, hiçbir beceri göstermeyen bot oyunların %81'inde
+zirveye çıkıyordu. İyi haber kötüden sık geldiği için her hisse sonsuza dek
+yükseliyor, oyunun sonu beceriyi değil sabrı ölçüyordu.
+
+**Çözüm:** her hissenin gizli bir **esas değeri** var (`Hisse::esasDeger`). Şirket
+haberlerinin bir kısmı esasa yansır, kalanı *heyecandır*. `Degerleme = adilDeğer /
+esasDeğer`. Hisse pahalılaştıkça o hisseye **iyi haber gelme olasılığı düşer**
+(`− 1,5·ln(değerleme)`), eşiği (1,30) aşarsa her gün bir **DÜZELTME** haberi riski
+doğar; ucuzlayan hissede tersi (**TOPARLANMA**). Kartta etiket durur:
+
+| Etiket | Değerleme | Anlamı |
+|---|---|---|
+| KELEPİR | < 0,85 | belirgin artı beklenti, toparlanma olasılığı |
+| UCUZ | < 0,97 | artı beklenti |
+| MAKUL | ≤ 1,12 | nötr |
+| PAHALI | ≤ 1,27 | eksi beklenti |
+| BALON | > 1,27 | belirgin eksi + düzeltme riski |
+
+- **Oyunun başıyla uyum:** heyecan payı rütbeyle büyür (rütbe 0'da sıfır, son rütbede
+  %50). İlk rütbelerde değerleme hiç oynamaz, etiket hep MAKUL kalır; oyunun başı
+  v2.0 ile aynıdır. **Ama etiketin anlamı her rütbede aynıdır** — ilk tasarımda ceza
+  da rütbeyle ölçekleniyordu ve "PAHALI görünce sat" kuralı orta rütbelerde zarar
+  ettiriyordu (etiket yazıyor ama etkisi yoktu); Değerci botu bunu gösterdi.
+- Esas değer her gün adil değerle arasındaki farkın %3'ünü kapatır
+  (`DEGERLEME_YAKINSAMA_GUNLUK`): şirket değerlemesinin "içini doldurur". Bu olmadan
+  denge noktasında haber getirisi sıfıra iniyor, haberleri oynayan oyuncu da
+  yavaşlıyordu. %6 denendi: al-tut yeniden %68'e çıkıyor, beceri farkı daralıyordu.
+- Yönetim kararlarının etkisi esas değere **aynen** işlenir (heyecan sayılmaz).
+- Güvenli limanların değerlemesi yoktur (hep 1).
+
+### Görevler (v2.1)
+
+Rütbeler arasındaki boşluğu dolduran kısa hedefler; her an **tek** görev vardır ve
+grafik panelinin başlığında durur. 12 tür (`src/gorev.h`): tek satışta X TL kâr, iyi
+haberi fiyata yansımadan al, K farklı varlıkta pozisyon tut, net değeri X'e çıkar,
+temettü al, olumlu bilançoyu hisseyle karşıla, UCUZ/KELEPİR al, PAHALI/BALON'u kârla
+sat, bir emrin gerçekleşsin, açığa satıştan kâr et, kötü küresel haberde altın/dolar
+tut, bir şirketi devral.
+
+- Görev oyuncunun **o anki durumuna göre** seçilir (yalnızca açık araçlarla ilgili
+  olanlar, bir önceki türün tekrarı değil) ve mekanikleri kullanmaya yönlendirir.
+- Ödül: net değerin %2'si (en az 150 TL). Süre 8 gün; dolarsa ceza yok, yenisi gelir.
+- Yeni tür eklemek: `gorev.h` başındaki dört adım.
+
+### Güvenli limanlar: altın ve dolar (v2.1)
+
+Rütbe 2'de (`LIMAN_MIN_RUTBE`) açılır. Kodda birer `Hisse`'dir (`liman = true`),
+hisse dizisinin **sonunda** dururlar (`HisseSayisi()` = 6 gerçek hisse; limanlar
+ondan sonra). Hisselerden farkları:
+
+- Piyasa faktörüne **ters** tepki verirler (beta −0,20 / −0,35) ve kötü küresel
+  olaylarda **yükselirler** (`kureselDuyarlilik` −0,55 / −0,80). Ölçülen korelasyon:
+  altın −0,36, dolar −0,62. Oynaklıkları hisselerin yarısından azdır.
+- Uzun vadede yavaşça değer kazanırlar (günde ~%0,1) ama hisselerin haber getirisi
+  yoktur: **büyümek için değil korunmak için** vardır.
+- Şirket haberi, bilanço, temettü, değerleme, açığa satış ve devralma **yoktur**.
+- Likiditeleri farklıdır (`likidite`, `azamiAdet`): 40 TL'lik dolardan 100.000 adet
+  alınabilir, 3.000 TL'lik altından 2.000.
+- Yatayda grafik panelinin altında mini kart, dikeyde varlık seçicide çip olarak durur.
+
 ### Bilanço takvimi (v2.0)
 
 Her şirket 12 günde bir bilanço açıklar. **Tarih bellidir** (kartta geri sayım),
@@ -228,7 +355,7 @@ gizlidir). Araçlar da rütbeyle açılır ve duyurulur:
 | Rütbe | Açılan |
 |---|---|
 | 1 Deneyimli Yatırımcı | Emirler (`EMIR_MIN_RUTBE`) |
-| 2 Uzman Trader | Açığa satış (`ACIGA_MIN_RUTBE`) |
+| 2 Uzman Trader | Açığa satış (`ACIGA_MIN_RUTBE`) + güvenli limanlar (`LIMAN_MIN_RUTBE`) |
 | 3 Borsa Kaplanı | Kredi (`KREDI_MIN_RUTBE`) + içeriden bilgi mektubu |
 
 ### Emirler
@@ -260,9 +387,28 @@ günlük ödünç ücreti ve temettü öder. Hisse başına en fazla 500 adet.
 
 ### Devralma ve yönetim kararları
 
-1000 hissenin 501'i → şirketi devralırsın. Sahipken 14–24 sn'de bir karar penceresi:
-riskli seçenek (anında kazanç, kalıcı oynaklık) ya da güvenli. 6 karar şablonu.
-Çoğunluğu kaybedersen kontrol gider. Karar açıkken simülasyon durur, kaçılamaz.
+1000 hissenin 501'i → şirketi devralırsın. Sahipken 14–24 sn'de bir karar penceresi
+açılır (6 şablon). Çoğunluğu kaybedersen kontrol gider. Karar açıkken simülasyon
+durur, kaçılamaz.
+
+**v2.1: riskli seçenek gerçekten risklidir.** v2.0'a kadar riskli seçenek her
+seferinde +%8…18 veriyor, tek bedeli biraz oynaklıktı. Ölçüldü: şirketi devralıp
+*hep* riskliyi seçen oyuncu 30.000 TL'den zirveye medyan **29 günde**, oyunların
+**%100'ünde** çıkıyordu (haberleri okuyan bot aynı yolu ~80 günde alıyor) — oyunun
+geri kalanını anlamsızlaştıran bir açık. Şimdi:
+
+- Riskli karar bir **kumardır**: tutarsa şablondaki kazanç, tutmazsa onun %75'i kadar
+  kayıp (`YONETIM_BASARISIZLIK_ORANI`). Sonuç anında bildirim ve haber bandıyla duyurulur.
+- **Tutma şansı şirketin birikmiş risk primine bağlıdır:** temiz şirkette %70, risk
+  primi tavandayken %30 (`YONETIM_BASARI_TABAN`, `_RISK_EGIMI`). Her riskli karar
+  (tutsa da tutmasa da) risk primini artırır; her güvenli karar düşürür
+  (`YONETIM_GUVENLI_TOPARLANMA`).
+- Doğru oyun: **şirket sağlamken risk al, kırılganken toparla.** Hep riskli batırır,
+  hep güvenli az ama kesin kazandırır, şansa bakan en iyisidir (bkz. Testler'deki tablo).
+- Pencere bunu **açıkça** gösterir: "Şirket riski: DÜŞÜK/ORTA/YÜKSEK", riskli düğmede
+  "Şans %58: +%15 ya da −%11", güvenli düğmede "Kesin +%2, şirket riski azalır".
+- Sonuç oyuncu üretecinden çekilir ve üretecin durumu kayda yazılır; kaydedip geri
+  yükleyerek sonuç değiştirilemez.
 
 ### Diğerleri
 
@@ -271,23 +417,70 @@ riskli seçenek (anında kazanç, kalıcı oynaklık) ya da güvenli. 6 karar ş
   **oluştuğu anda** planlanır; okusan da okumasan da gerçekleşir (mektup olayı
   yaratmaz, önceden haber verir). Haber bandına bilerek yazılmaz, kaydedilmez.
 - **Senaryolar** (`veri.h`): Klasik, Kriz Yılı (oynaklık tavanda, koruma yok), Zamana
-  Karşı (45 gün, skor = net değer), Sıfırdan Zirveye (2.500 TL). Her birinin rekoru
-  profilde tutulur. **Sıra değişmemeli** (profil indeksle saklar); yenisi sona.
-- **Başarımlar:** 15 tane, profilde kalıcı. Sıra değişmemeli; yenisi sona.
-  "Hız Rekoru" eşiği (100 gün) Haberci botunun medyanıdır.
-- **Rehber:** hiç görülmediyse Klasik'te kendiliğinden başlar; 6 adım. Bazı adımlar
+  Karşı (45 gün, skor = net değer), Sıfırdan Zirveye (2.500 TL), Günün Piyasası.
+  Her birinin rekoru profilde tutulur. **Sıra değişmemeli** (profil indeksle saklar);
+  yenisi sona.
+- **Günün Piyasası (v2.1):** 30 günlük, **günün tarihiyle tohumlanan** senaryo. O gün
+  oynayan herkes aynı küresel olayları, aynı piyasa havasını ve aynı bilanço
+  sonuçlarını görür; skor = 30. gündeki net değer. Günün en iyi skoru profilde
+  tutulur, oyun sonu penceresindeki **Skoru Kopyala** düğmesi paylaşılacak metni
+  panoya koyar. Ortamın oyuncudan bağımsız kalması için bu senaryoda acemi koruması
+  rütbeye değil sabit bir değere bağlıdır (bkz. Belirlenim). Fiyatların son
+  basamağı platformlar arasında (Windows / tarayıcı) farklı çıkabilir; olaylar aynıdır.
+- **Başarımlar:** 18 tane, profilde kalıcı. Sıra değişmemeli; yenisi sona.
+  "Hız Rekoru" eşiği (100 gün) Haberci botunun medyanına yakındır (107).
+- **Rehber:** hiç görülmediyse Klasik'te kendiliğinden başlar; 7 adım. Bazı adımlar
   oyuncu isteneni yapınca geçer (al, sat), diğerleri "Anladım" bekler. Ayarlardan
-  yeniden başlatılabilir.
+  yeniden başlatılabilir. **Metinlerde "soldaki / sağ alttaki" gibi yön sözcüğü
+  kullanma:** yatay ve dikey yerleşimde aynı şey farklı yerde durur; yeri, kutudan
+  hedefe uzanan çizgi gösterir.
 - **Oyun sonu penceresi:** zirve / süre doldu / iflas; istatistikler ve rekor. Zirve
   ve süre sonrasında oyuncu kum havuzu olarak devam edebilir.
+- **Müzik (v2.1):** 24 saniyelik, kendi üstüne sarılan sakin bir döngü (La minör – Fa –
+  Do – Sol; ped + bas + arpej + sarmalı yankı), `ses.h` içinde kodla üretilir. Ayarlardan
+  kapatılır; "Ses: Kapalı" müziği de susturur. Tarayıcıda ses ilk dokunuşla başlar
+  (tarayıcı kuralı).
+- **Renk körü modu (v2.1):** Ayarlar'da. Yeşil/kırmızı yerine mavi/turuncu kullanır.
+  `RENK_YESIL/KIRMIZI/UYARI` bu yüzden sabit değil değişkendir (`PaletiAyarla`);
+  düğme renkleri `ArayuzKur` içinde yeniden atanır. **Bir rengi `static const` bir
+  tabloya kopyalama** — palet değişince eski renkte kalır.
+- **Grafik modları (v2.1):** TL / yüzde / **net değer geçmişi** (günde bir nokta, bir
+  sonraki rütbenin eşiği kesikli çizgiyle). Tercih kayda yazılır ve yeni oyunda korunur.
 
 ## Arayüz kuralları
 
-- Her şey sabit **1280×720** sanal sahneye çizilir, sonra gerçek pencereye en-boy
-  oranı korunarak basılır (16:9 monitörlerde ölçek tam sayı çıkar, pillarbox kalmaz).
-- **Dikdörtgenler tek yerde** hesaplanır: `ArayuzKur()`. Düğme **etiketleri her
-  karede** yeniden yazılır (`EtiketleriYenile()`); dil ya da durum değişince eski
-  etiket kalması diye bir hata sınıfı olamaz.
+- **Sahne boyutu değişkendir (v2.1).** Her şey sanal bir sahneye çizilir, sonra
+  gerçek pencereye basılır; ama sahnenin boyutu artık pencerenin en-boy oranına göre
+  seçilir (`SahneBoyutunuGuncelle`, kurallar `temel.h` başında):
+
+  | Pencere oranı (en/boy) | Sahne | Fazla alan nereye gider |
+  |---|---|---|
+  | 16:9'dan geniş (≤ 8:3) | yükseklik 720, genişlik 1280…1920 | grafiğe |
+  | 16:9 … 4:3 | genişlik 1280, yükseklik 720…960 | kartlara ve grafiğe |
+  | 0,80'den dar (telefon) | **dikey yerleşim:** genişlik 480…720, yükseklik 900…1180 | grafiğe |
+
+  Bu aralıklarda sahne pencereyi **boşluksuz** doldurur; dışında (çok basık / kareye
+  yakın dikey) ortalanır ve kalan yer boş kalır. v2.0'a kadar sahne sabit 1280×720
+  idi ve 16:9 olmayan her pencerede (bir tarayıcı sekmesi ~2:1'dir) yanlarda siyah
+  bant kalıyordu.
+- `PENCERE_GENISLIK` / `PENCERE_YUKSEKLIK` bu yüzden **sabit değil**, o anki sahne
+  boyutudur. Yerleşim kodunda `1280` ya da `720` yazma; bunlara göre hesapla.
+- **Dikey yerleşim** (`g_dikey`, `arayuz_dikey.h`) ayrı bir ekrandır: 6 kartı alt alta
+  dizmek yerine bir **varlık seçici** (her varlık için bir çip) ve **seçili varlığın
+  tek büyük kartı** vardır; AL/SAT düğmeleri parmak boyundadır. Üst bar, haber bandı,
+  grafik ve adet paneli yatayla aynı fonksiyonlarla çizilir. "Yeni Oyun" düğmesi
+  dikeyde ekranda yoktur (yanlış dokunuşla sıfırlama olmasın; ana menüden).
+- **Pencereler ve menüler iki yönde aynı koddur;** dar sahnede (`DarEkran()`, genişlik
+  < 1000) iç düzenlerini alt alta dizerler. Paneller `OrtaliPanel()` ile sahneye
+  sığacak şekilde kısalır.
+- **Dikdörtgenler tek yerde** hesaplanır: `ArayuzKur()` (sahne boyutu her değiştiğinde
+  yeniden çalışır; düğmelerin hover durumunu bozmaz). Düğme **etiketleri her karede**
+  yeniden yazılır (`EtiketleriYenile()`); dil ya da durum değişince eski etiket
+  kalması diye bir hata sınıfı olamaz.
+- **Grafik başlığında metin kırpılmaz:** görev, ödülü ve içeriden bilgi şeridi tek
+  satıra sığmıyorsa alt alta dizilir ve çizim alanı o kadar aşağı iner.
+- **Kompakt kart:** 130 px'ten kısa her kart kompakt çizilir ve 95 px'i geçmez
+  (denenmiş aralık 59–95). Sahne yüksekse artan yer portföy özetine kalır.
 - **Pencere önceliği** (en üstteki tıkı alır): çıkış onayı > oyun sonu > yönetim
   kararı > emir > kredi > ayarlar > duraklatma menüsü. Herhangi biri açıkken
   simülasyon durur.
@@ -297,6 +490,7 @@ riskli seçenek (anında kazanç, kalıcı oynaklık) ya da güvenli. 6 karar ş
 - Grafik panelinin **sağ üstü doludur** ("PİYASA MODU" yazısı ve içeriden bilgi
   şeridi) — oraya düğme koyma.
 - Bildirimler (toast) her şeyin üstünde çizilir ve duraklatmada da hareket eder.
+  Dikeyde rehber kutusu açıksa bildirimler kutunun **altından** başlar.
 - Görsel durum (`GorselGuncelle`) simülasyondan ayrıdır ve her karede çalışır.
 
 ## Dil ve font
@@ -318,13 +512,20 @@ riskli seçenek (anında kazanç, kalıcı oynaklık) ya da güvenli. 6 karar ş
 
 ## Kayıt ve profil
 
-- **Oyun kaydı** `borsa_kayit.sav`: satır satır metin. Sürümler V1→V5. **Kural: her
-  yeni sürüm alanlarını dosyanın SONUNA ekler**; bu yüzden V2/V3/V4 kayıtları hâlâ
-  yüklenir (eksik alanlar varsayılanda kalır, ilk kayıtta V5'e yükselir). V1 reddedilir.
+- **Oyun kaydı** `borsa_kayit.sav`: satır satır metin. Sürümler V1→V6. **Kural: her
+  yeni sürüm alanlarını dosyanın SONUNA ekler**; bu yüzden V2…V5 kayıtları hâlâ
+  yüklenir (eksik alanlar varsayılanda kalır, ilk kayıtta V6'ya yükselir). V1 reddedilir.
   Yeni alan eklerken aynı yöntemi kullan: sona ekle, yeni etiket tanımla, eskileri
   kabul edilenler arasında bırak.
-- **Profil** `borsa_profil.sav`: başarımlar, senaryo rekorları, dil, "rehber görüldü".
-  Oyun kaydından ayrıdır; yeni oyun ya da başka kayıt yüklemek bunları silmez.
+- **V6 (v2.1)** şunları ekler: iki rastgele sayı üretecinin durumu, günün tarihi,
+  hisselerin esas değerleri, güvenli limanların tamamı (eski blokların ortasına alan
+  eklenemeyeceği için limanlar eski bloklarda **yoktur**, kendi bloklarında yazılır),
+  görev durumu, net değer geçmişi. Eski bir kayıt yüklenince limanlar başlangıç
+  fiyatında, değerlemeler 1,00'da, görev boş başlar. Üreteç durumu yalnızca yükleme
+  **başarılıysa** değiştirilir. Kullanıcının gerçek V4 kaydıyla doğrulandı.
+- **Profil** `borsa_profil.sav`: başarımlar, senaryo rekorları, dil, "rehber görüldü",
+  müzik ve renk körü tercihleri, günün skoru. Oyun kaydından ayrıdır; yeni oyun ya da
+  başka kayıt yüklemek bunları silmez. Yeni alanlar burada da sona eklenir.
 - Masaüstünde ikisi de **`.exe`'nin yanına** yazılır (çalışma dizinine değil —
   kısayoldan/itch uygulamasından başlatınca kayıt "kayboluyordu"). Webde `localStorage`.
 - Yükleyici **istisna kullanmaz** (`SatirOkuyucu`): web derlemesinde istisnalar
@@ -333,16 +534,26 @@ riskli seçenek (anında kazanç, kalıcı oynaklık) ya da güvenli. 6 karar ş
 
 ## Web sürümü
 
-- `python build.py web` → `web_cikti/` (index.html + .js + .wasm, toplam ~0,8 MB).
+- `python build.py web` → `web_cikti/` (index.html + .js + .wasm, toplam ~0,9 MB).
 - Fark yaratan her şey `#if BORSA_WEB` ile `platform.h` ve `uygulama.h` içinde:
   - Kare döngüsünü tarayıcı çağırır (`emscripten_set_main_loop_arg`).
   - Çıkış düğmeleri ve pencere modu seçenekleri gizlidir; tuval sayfayı doldurur.
+  - **Tuval boyutu (v2.1):** her karede `js_tuval_hedef_boyutu()` sorulur (sayfanın
+    boyutu × ekranın piksel yoğunluğu, yoğunluk en fazla 2) ve tuval farklıysa
+    `SetWindowSize` ile uydurulur. Pencere büyüyüp küçülünce ya da telefon dönünce
+    sahne ve yerleşim o karede değişir. Yüksek yoğunluklu ekranlarda yazı nettir.
   - **Tık kuyruğu:** raylib fare tuşunu kare başına bir kez yoklar; aynı karede
     basılıp bırakılan tık kaybolur. `mousedown` ayrıca yakalanıp sıraya konur.
+  - **Dokunmatik:** raylib dokunuşu fare tuşuna eşler. Tarayıcının dokunuştan sonra
+    ürettiği sahte `mousedown` tık kuyruğuna girerse tek dokunuş iki tık olurdu (çift
+    alım!); bir dokunuştan sonraki 800 ms içindeki `mousedown` bu yüzden yok sayılır.
 - **Test:** tarayıcı görünmeyen bir sayfada `requestAnimationFrame`'i hiç çağırmaz.
   Otomatik testler için adrese `?zamanlayici` eklenirse kareler zamanlayıcıyla üretilir.
-- Doğrulandı (yerel sunucu + tarayıcı): menü, Türkçe glifler, alım, duraklatma, kayıt
-  ve sayfa yenilendikten sonra yükleme.
+- Doğrulandı (yerel sunucu + tarayıcı): 2,4:1 ve 1,43:1 pencerelerde sahnenin
+  boşluksuz dolması; telefon öykünmesinde (375×812, yoğunluk 2) dikey yerleşim, net
+  yazı, doğru yere düşen ve **tek** sayılan dokunuş; alım, duraklatma, kayıt (V6) ve
+  sayfa yenilendikten sonra yükleme; konsolda hata yok. **Gerçek bir telefonda
+  denenmedi** (yalnızca tarayıcının telefon öykünmesi); ses de dinlenmedi.
 
 ## Yayınlama (GitHub Pages)
 
@@ -355,7 +566,8 @@ Oyunun canlı adresi: **https://emrebiltekin.me/borsa-patronu/**
   yalnızca derlenmiş sayfa durur, geçmişi tutulmaz. Kaynak kodun geçmişi `main`'dedir.
 - Pages ayarı: kaynak `gh-pages` dalı, kök klasör. Yayın 1–2 dakika sürer.
 - Sayfa tam bir tarayıcı sekmesidir (iframe değil); sekmenin en-boy oranı 16:9
-  olmadığı için sahnenin pencereye uyması burada özellikle önemlidir.
+  olmadığı için sahnenin pencereye uyması burada özellikle önemlidir (v2.1 ile
+  sahne sekmeyi boşluksuz doldurur; telefonda dikey yerleşime geçer).
 - Kayıtlar tarayıcının `localStorage` alanında, alan adına özel tutulur: adres
   değişirse (ör. özel alan adı kaldırılırsa) oyuncuların kayıtları görünmez olur.
 - Paylaşım önizlemesi (`og:image`) `web/kabuk.html` içinde TAM adresle yazılıdır;
@@ -368,7 +580,8 @@ Oyunun canlı adresi: **https://emrebiltekin.me/borsa-patronu/**
 - `release/BorsaPatronu-vX.Y-win64.zip` — yalnızca `borsa_patronu.exe` + `OKUBENI.txt`.
   itch.io'da "Windows" olarak işaretle.
 - `release/BorsaPatronu-vX.Y-web.zip` — itch.io'da "This file will be played in the
-  browser" işaretle; görünüm 1280×720, "Fullscreen button" açık. Tarayıcıda oynanan
+  browser" işaretle; görünüm 1280×720, "Fullscreen button" ve "Mobile friendly"
+  açık (v2.1 ile oyun her çerçeve boyutuna ve telefona uyar). Tarayıcıda oynanan
   sürümde **SmartScreen uyarısı hiç çıkmaz**.
 
 Dikkat edilecekler:
@@ -389,8 +602,10 @@ Dikkat edilecekler:
 - Uzak depo: **https://github.com/lizer20/borsa-patronu** (herkese açık). Commit'ler
   GitHub'ın `noreply` adresiyle atılır (depo ayarında tanımlı); kişisel e-posta
   depoya girmez.
-- Proje bir **git deposu** (v2.0 ile). Her sürüm `vX.Y` etiketiyle işaretlenir;
-  fark görmek için `git diff v1.1 v2.0`, geri almak için `git checkout`.
+- Proje bir **git deposu** (v2.0 ile). Her sürüm `vX.Y` etiketiyle işaretlenir
+  (`v1.1`, `v2.0`, `v2.1`); fark görmek için `git diff v2.0 v2.1`, geri almak için
+  `git checkout`. Yeni sürümün sırası: `src/surum.h` → `python build.py paket` →
+  commit + etiket + `git push --tags` → `python build.py yayinla`.
 - `updates/v0.1 … v1.1` klasörleri git öncesi elle alınmış kopyalardır; **donduruldu**,
   depoya girmez, yenisi eklenmez. Eski sürümlerin `.exe`'leri orada ve `release/` altında.
 - `release/`, `updates/`, derleme çıktıları ve oyuncu dosyaları `.gitignore`'dadır.
@@ -400,11 +615,18 @@ Dikkat edilecekler:
 ## Bilinen kısıtlar
 
 - Latin-1 + 6 Türkçe harf dışındaki karakterler çizilmez (bkz. Dil ve font).
-- DPI farkındalığı bilerek kapalı: oyun sabit sahneyi ölçekliyor, DPI-aware yapılırsa
-  yüksek DPI ekranlarda pencere fiziksel olarak küçük kalır.
+- Masaüstünde DPI farkındalığı bilerek kapalı (manifestte yok): pencere yüksek DPI
+  ekranlarda Windows tarafından büyütülür. Açılırsa pencere fiziksel olarak küçük
+  kalır; önce başlangıç pencere boyutunu DPI'ya göre seçmek gerekir.
+- Masaüstü penceresi yeniden boyutlandırılabilir (en az 480×360); çok dar yapılırsa
+  dikey yerleşime geçer. Bu bilerek böyle: telefon yerleşimini masaüstünde denemenin
+  en kolay yolu.
+- Telefon yerleşimi yalnızca tarayıcının telefon öykünmesiyle denendi.
 - Ses cihazı yoksa oyun sessiz çalışır (bilerek; `Cal()` ve `SesEfektleri::Yukle`
   içindeki savunmayı silme).
 - Şirket sayısı kayıt dosyasına yazılır; şirket eklemek/çıkarmak eski kayıtları bozar.
+  Yeni bir güvenli liman eklemek bozmaz (limanlar V6 bloğunda sayılarıyla yazılır),
+  ama `AZAMI_LIMAN` (4) ve dikey seçicinin satır sayısı gözden geçirilmelidir.
 - Web sürümünde kayıt tarayıcıya ve siteye özeldir; itch.io'da üçüncü taraf depolamayı
   engelleyen tarayıcılarda kayıt tutulmayabilir.
 
@@ -439,15 +661,30 @@ Dikkat edilecekler:
     Türkçe harfler, İngilizce, rehber, emirler, açığa satış, kredi, bilanço takvimi,
     korelasyon ayarı, senaryolar, başarımlar, oyun sonu. Bu sırada v1.1'deki
     "parçalı al, toplu sat" açığı bulundu ve akış tabanlı modelle kapatıldı.
+25. "Her şey çok güzel çalışıyor, başka ne getirebiliriz?" → sunulan 6 maddenin
+    tamamı istendi ("yapabildiğinin hepsini yap") **artı** "bilgisayarda internette
+    görüntüyü sağda ve solda black bar olmadan yap, daha geniş bir görünüm olur"
+    **artı** "GitHub deposuna kur, kendin pushla" → **v2.1**: değerleme katmanı
+    (al-tut baskınlığı), görevler, güvenli limanlar, Günün Piyasası, telefon
+    desteği, müzik, renk körü modu, net değer grafiği; pencereye uyan sahne.
+    Doğrulama sırasında "devral + hep riskli" açığı bulundu ve yönetim kararları
+    gerçek bir risk/ödül seçimine çevrildi.
+26. "GitHub Pages'ten yayınlayalım" → `build.py yayinla`, canlı adres.
 
 ## Sonraki adımlar için fikirler (istenmedi)
 
-- v2.0'ın yeni sistemleri botlarla ve otomatik testlerle doğrulandı ama **insan
-  elinde uzun süre oynanmadı**; emirlerin/kredinin oyun hissi ve rehberin temposu
-  oyuncu geri bildirimiyle ayarlanmalı.
-- Android: raylib destekliyor ama dokunmatik için düğmeler küçük; ayrı bir yerleşim ister.
-- Müzik (prosedürel), daha fazla senaryo, günlük "tohumlu" meydan okuma.
-- Web sürümünde yüksek DPI ekranlar için tuval çözünürlüğü (`devicePixelRatio`).
+- v2.0 ve v2.1'in yeni sistemleri botlarla ve otomatik testlerle doğrulandı ama
+  **insan elinde uzun süre oynanmadı**. Oyuncu geri bildirimiyle ayarlanması
+  gerekenler: görevlerin sıklığı ve ödülü, değerleme etiketinin ne kadar "okunur"
+  olduğu, yönetim kumarının hissi (şans %70→%30 eğrisi), müziğin seviyesi/tekrarı,
+  dikeyde düğme boyları.
+- **Gerçek bir telefonda dene** (Android Chrome + iOS Safari): dokunuş, ses başlangıcı,
+  adres çubuğunun görünüp kaybolmasıyla sahnenin yeniden boyutlanması.
+- Değerleme katmanında beceri farkı orta düzeyde (Değerci %68, Tutucu %48). Daha
+  belirgin olması istenirse `DEGERLEME_HABER_EGIMI` ve etiket eşikleri ayarlanabilir.
+- Günün Piyasası için ortak skor tablosu (sunucu gerekir; şu an skor panoya kopyalanıp
+  elle paylaşılıyor).
+- Android paketi (APK): dikey yerleşim hazır; geriye derleme zinciri ve kayıt yolu kalıyor.
 
 ## Bu notların yeri
 

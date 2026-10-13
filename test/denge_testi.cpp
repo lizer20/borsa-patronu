@@ -28,10 +28,12 @@ static void Yaz(const char* bicim, ...) {
 }
 
 static int IlkAcikHisse(const Oyun& o) {
-    for (int i = 0; i < (int)o.hisseler.size(); i++)
+    for (int i = 0; i < HisseSayisi(); i++)
         if (o.hisseler[i].acilmaSeviyesi == 0) return i;
     return 0;
 }
+
+#include "denge_botlari.h"
 
 // ---------------------------------------------------------------------------
 // 1) SUISTIMAL TESTLERI
@@ -152,6 +154,26 @@ static void SuistimalTestleri() {
         for (int t = 0; t < 20; t++) { KrediAl(o, 1e9f); KrediOde(o, 1e9f); }
         SuistimalSatiri("kredi al / ode x20", bas, o.NetDeger());
     }
+    for (const char* kod : {"ALTIN", "DOLAR"}) {   // guvenli limanlarda al-sat dongusu
+        Oyun o = yeniOyun(300000.0f);
+        int idx = LimanIndeksi(o, kod);
+        float bas = o.NetDeger();
+        for (int t = 0; t < 5; t++) {
+            o.secilenAdet = 5;
+            for (int k = 0; k < 60; k++) HisseAl(o, idx);
+            o.secilenAdet = -1;
+            HisseSat(o, idx);
+            HisseAl(o, idx);
+            HisseSat(o, idx);
+        }
+        char ad[96];
+        snprintf(ad, sizeof(ad), "%s: 5'erli al / toplu sat / MAKS al-sat x5", kod);
+        SuistimalSatiri(ad, bas, o.NetDeger());
+        // aciga satilamamali
+        o.secilenAdet = 10;
+        HisseSat(o, idx);
+        if (o.hisseler[idx].adet < 0) { Yaz("  %s aciga satilabildi <<< HATA\n", kod); g_suistimalHata++; }
+    }
     {   // rastgele islem dizileri: 300 farkli seed, fiyat sabit
         int artida = 0;
         float enIyi = -1e9f;
@@ -188,12 +210,15 @@ static void SuistimalTestleri() {
 // ---------------------------------------------------------------------------
 static void PiyasaIstatistikleri() {
     Yaz("\n=== 2) PIYASA ISTATISTIKLERI (haber/olay yok, 200.000 tik) ===\n");
-    SetRandomSeed(12345);
+    SimTohumla(12345);
     Oyun o;
     o.Baslat(S_KLASIK, false);
     const int N = 200000;
     const int PENCERE = 30; // "30 saniyelik getiri" icin
-    const int H = (int)o.hisseler.size();
+    const int H = HisseSayisi(); // hisseler; guvenli limanlar asagida ayrica olculur
+    const int L = (int)o.hisseler.size() - H;
+    vector<double> lR(L, 0), lR2(L, 0), lRE(L, 0);
+    double eR = 0, eR2 = 0; // "endeks": hisse getirilerinin ortalamasi
     vector<double> topR(H, 0), topR2(H, 0), topSapma2(H, 0), topW(H, 0), topW2(H, 0), birikim(H, 0);
     vector<vector<double>> topRR(H, vector<double>(H, 0)), topWW(H, vector<double>(H, 0));
     double topM = 0, topM2 = 0;
@@ -202,6 +227,8 @@ static void PiyasaIstatistikleri() {
     for (int t = 0; t < N; t++) {
         vector<float> once(H);
         for (int i = 0; i < H; i++) once[i] = o.hisseler[i].fiyat;
+        vector<float> lOnce(L);
+        for (int k = 0; k < L; k++) lOnce[k] = o.hisseler[H + k].fiyat;
         PiyasaGuncelle(o);
         double m = o.piyasaFaktoru;
         topM += m; topM2 += m * m;
@@ -214,6 +241,13 @@ static void PiyasaIstatistikleri() {
         }
         for (int i = 0; i < H; i++)
             for (int j = 0; j < H; j++) topRR[i][j] += r[i] * r[j];
+        double endeks = 0;
+        for (int i = 0; i < H; i++) endeks += r[i] / H;
+        eR += endeks; eR2 += endeks * endeks;
+        for (int k = 0; k < L; k++) {
+            double lr = o.hisseler[H + k].fiyat / lOnce[k] - 1.0;
+            lR[k] += lr; lR2[k] += lr * lr; lRE[k] += lr * endeks;
+        }
         if ((t + 1) % PENCERE == 0) {
             for (int i = 0; i < H; i++) { topW[i] += birikim[i]; topW2[i] += birikim[i] * birikim[i]; }
             for (int i = 0; i < H; i++)
@@ -245,9 +279,14 @@ static void PiyasaIstatistikleri() {
         }
     Yaz("  Hisseler arasi korelasyon (1 sn getiri) : ortalama %.2f (en dusuk %.2f, en yuksek %.2f)\n", topKor / ciftSayisi, minKor, maxKor);
     Yaz("  Hisseler arasi korelasyon (%d sn getiri): ortalama %.2f   (gercek borsalarda ~0,3-0,5)\n", PENCERE, topKorW / ciftSayisi);
+    double eSd = sqrt(eR2 / N - (eR / N) * (eR / N));
+    for (int k = 0; k < L; k++) {
+        double lSd = sqrt(lR2[k] / N - (lR[k] / N) * (lR[k] / N));
+        double kor = (lRE[k] / N - (lR[k] / N) * (eR / N)) / (lSd * eSd);
+        Yaz("  Guvenli liman %-6s tik std %.3f%%, hisse endeksiyle korelasyon %+.2f (EKSI olmali)\n",
+            o.hisseler[H + k].kod.c_str(), lSd * 100.0, kor);
+    }
 }
-
-#include "denge_botlari.h"
 
 int main() {
     g_rapor = fopen("test/denge_raporu.txt", "w");
@@ -256,7 +295,11 @@ int main() {
     SuistimalTestleri();
     PiyasaIstatistikleri();
     BotTurnuvasi();
-    Yaz("\nSONUC: suistimal testi %s\n", g_suistimalHata == 0 ? "TEMIZ" : "BASARISIZ - yukaridaki 'ACIK' satirlarina bak");
+    int belirlenimHata = BelirlenimTestleri();
+    int devralmaHata = DevralmaDeneyi();
+    Yaz("\nSONUC: suistimal testi %s, belirlenim testi %s, devralma dengesi %s\n",
+        g_suistimalHata == 0 ? "TEMIZ" : "BASARISIZ - yukaridaki 'ACIK' satirlarina bak",
+        belirlenimHata == 0 ? "TEMIZ" : "BASARISIZ", devralmaHata == 0 ? "TEMIZ" : "BASARISIZ");
     if (g_rapor) fclose(g_rapor);
-    return g_suistimalHata == 0 ? 0 : 1;
+    return (g_suistimalHata == 0 && belirlenimHata == 0 && devralmaHata == 0) ? 0 : 1;
 }

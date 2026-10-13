@@ -30,6 +30,7 @@ static void EmirGerceklestiBildir(Oyun& o, const string& baslik, const Hisse& h,
     o.toastlar.Ekle(baslik, h.kod + ": " + to_string(s.adet) + M(" adet @ ", " @ ") + Para(s.dolum), RENK_UYARI, 5.0f);
     Cal(o.sesler.emirGerceklesti);
     if (o.gerceklesenEmirSayisi >= 5) BasarimVer(o, B_EMIR);
+    GorevOlay(o, G_EMIR);
 }
 
 // Her simulasyon adiminda cagrilir. Emirler PIYASA EMRI olarak gerceklesir:
@@ -60,7 +61,7 @@ static void EmirleriKontrolEt(Oyun& o) {
         Emir& lm = h.emirler[EMIR_LIMIT_ALIM];
         if (lm.aktif && h.adet >= 0 && h.fiyat <= lm.fiyat) {
             lm.aktif = false;
-            int maks = min(MaksAlinabilir(h, o.bakiye), TOPLAM_HISSE_SAYISI - h.adet);
+            int maks = min(MaksAlinabilir(h, o.bakiye), h.azamiAdet - h.adet);
             int n = (lm.adet > 0) ? min(lm.adet, maks) : maks;
             if (n <= 0) {
                 o.toastlar.Ekle(M("LİMİT EMRİ İPTAL", "LIMIT ORDER CANCELLED"),

@@ -6,7 +6,25 @@
 // denge testi (test/denge_testi.cpp) pencere acmadan saniyede binlerce oyun gunu
 // isletebilir. Arayuz sadece "su an calissin mi" kararini verir.
 
-// Devraldigin sirkette acilan yonetim kararini uygular.
+// Riskli bir yonetim kararinin TUTMA olasiligi: sirketin birikmis risk primi
+// arttikca duser (bkz. temel.h, YONETIM_*).
+static float YonetimBasariOlasiligi(const Hisse& h) {
+    float r = Clamp(h.riskPrimi / RISK_PRIMI_TAVANI, 0.0f, 1.0f);
+    return YONETIM_BASARI_TABAN - YONETIM_BASARI_RISK_EGIMI * r;
+}
+// Riskli karar tutmazsa uygulanan carpan (kazancin YONETIM_BASARISIZLIK_ORANI kati kadar kayip).
+static float YonetimBasarisizlikCarpani(float kazancCarpani) {
+    return 1.0f - YONETIM_BASARISIZLIK_ORANI * (kazancCarpani - 1.0f);
+}
+// Sirket riski seviyesi: 0 dusuk, 1 orta, 2 yuksek (karar penceresinde gosterilir).
+static int SirketRiskSeviyesi(const Hisse& h) {
+    float r = h.riskPrimi / RISK_PRIMI_TAVANI;
+    return (r < 0.34f) ? 0 : (r < 0.67f) ? 1 : 2;
+}
+
+// Devraldigin sirkette acilan yonetim kararini uygular. Riskli secenek bir
+// kumardir: sonucu OYUNCU ureteciyle cekilir (ortam akisini etkilemez; uretecin
+// durumu kayda yazildigi icin "kaydet - dene - geri yukle" ile de degistirilemez).
 static void YonetimKarariUygula(Oyun& o, bool riskli) {
     if (!o.yonetimOlayiAcik) return;
     if (o.yonetimHisseIndex < 0 || o.yonetimHisseIndex >= (int)o.hisseler.size() ||
@@ -18,18 +36,42 @@ static void YonetimKarariUygula(Oyun& o, bool riskli) {
     const YonetimOlaySablonu& sablon = YONETIM_OLAYLARI[o.yonetimSablonIndex];
     const YonetimSecenek& secim = riskli ? sablon.riskli : sablon.guvenli;
 
-    hy.fiyat = fmaxf(0.5f, hy.fiyat * secim.temelDegerCarpani);
-    hy.temelDeger = fmaxf(0.5f, hy.temelDeger * secim.temelDegerCarpani);
+    float carpan = secim.temelDegerCarpani;
+    bool tuttu = true;
+    if (riskli) {
+        tuttu = g_rngOyuncu.Birim() < YonetimBasariOlasiligi(hy);
+        if (!tuttu) carpan = YonetimBasarisizlikCarpani(carpan);
+    }
+    hy.fiyat = fmaxf(0.5f, hy.fiyat * carpan);
+    hy.temelDeger = fmaxf(0.5f, hy.temelDeger * carpan);
+    // Yonetim kararinin etkisi tamamen GERCEKTIR (esas degere de aynen islenir):
+    // riskin bedeli artik kumarin kendisi; ayrica degerlemeyi sisirip ikinci kez
+    // cezalandirmiyoruz.
+    hy.esasDeger = fmaxf(0.5f, hy.esasDeger * carpan);
     hy.gosterilenFiyat.Ayarla(hy.fiyat);
     hy.flashSuresi = 0.6f;
-    hy.flashIyi = (secim.temelDegerCarpani >= 1.0f);
-    hy.riskPrimi = Clamp(hy.riskPrimi + secim.riskPrimiDegisimi, RISK_PRIMI_TABANI, RISK_PRIMI_TAVANI);
-    HaberBandinaEkle(o, hy.kod + M(" YÖNETİM KARARI: şirket ", " MANAGEMENT DECISION: the company ") + secim.logMetni.al());
+    hy.flashIyi = (carpan >= 1.0f);
+    // Risk primi: riskli karar (tutsa da tutmasa da) sirketi kirilganlastirir,
+    // guvenli karar toparlar.
+    float riskDegisimi = secim.riskPrimiDegisimi - (riskli ? 0.0f : YONETIM_GUVENLI_TOPARLANMA);
+    hy.riskPrimi = Clamp(hy.riskPrimi + riskDegisimi, RISK_PRIMI_TABANI, RISK_PRIMI_TAVANI);
+    const char* sonucMetni = (riskli && !tuttu && secim.basarisizMetni.tr) ? secim.basarisizMetni.al() : secim.logMetni.al();
+    HaberBandinaEkle(o, hy.kod + M(" YÖNETİM KARARI: şirket ", " MANAGEMENT DECISION: the company ") + sonucMetni);
+    if (riskli) {
+        string etki = hy.kod + "  " + Yuzde((carpan - 1.0f) * 100.0f, 0, true);
+        if (tuttu) {
+            o.toastlar.Ekle(M("RİSK TUTTU!", "THE GAMBLE PAID OFF!"), etki, RENK_YESIL, 3.5f);
+            Cal(o.sesler.satimKar);
+        } else {
+            o.toastlar.Ekle(M("RİSK TUTMADI!", "THE GAMBLE FAILED!"), etki, RENK_KIRMIZI, 4.0f);
+            Cal(o.sesler.satimZarar);
+        }
+    }
 
     o.yonetimOlayiAcik = false;
     o.yonetimHisseIndex = -1;
     o.yonetimSablonIndex = -1;
-    hy.yonetimOlayZamanlayici = RastgeleAralik(YONETIM_OLAY_MIN_SN, YONETIM_OLAY_MAX_SN);
+    hy.yonetimOlayZamanlayici = YONETIM_OLAY_MIN_SN + (YONETIM_OLAY_MAX_SN - YONETIM_OLAY_MIN_SN) * g_rngOyuncu.Birim();
     RutbeVeHedefKontrolEt(o);
 }
 
@@ -39,6 +81,7 @@ static void TemettuOde(Oyun& o) {
     o.sonTemettuGunu = o.gun;
     float gelen = 0.0f, giden = 0.0f;
     for (auto& h : o.hisseler) {
+        if (h.liman) continue; // altin ve dolar temettu vermez
         if (h.adet > 0) gelen += h.fiyat * (float)h.adet * TEMETTU_ORANI;
         else if (h.adet < 0) giden += h.fiyat * (float)(-h.adet) * TEMETTU_ORANI;
     }
@@ -66,19 +109,32 @@ static void TemettuOde(Oyun& o) {
                                  M(" ödedin.", " in dividends on your short positions."));
     }
     if (o.toplamTemettu >= 5000.0f) BasarimVer(o, B_TEMETTU);
+    GorevOlay(o, G_TEMETTU, gelen);
 }
 
 // Oyun gunu ilerledi.
 static void YeniGun(Oyun& o) {
     o.gun++;
     // Sirketlerin adil degeri de -cok yavas- kendi yolunda ilerler.
+    // (Guvenli limanlar ayrica yavas bir yukari suruklenme tasir.) Esas deger
+    // ayni carpanla ilerler: bu gunluk degisim "gercek"tir, degerlemeyi oynatmaz.
     for (auto& h : o.hisseler) {
-        float carpan = 1.0f + RastgeleGauss() * TEMEL_DEGER_GUNLUK_OYNAKLIK;
+        float oynaklik = TEMEL_DEGER_GUNLUK_OYNAKLIK * (h.liman ? h.volCarpani : 1.0f);
+        float carpan = 1.0f + RastgeleGauss() * oynaklik + h.gunlukSuruklenme;
         h.temelDeger = fmaxf(0.5f, h.temelDeger * carpan);
+        h.esasDeger = fmaxf(0.5f, h.esasDeger * carpan);
+        // Degerleme yakinsamasi: esas deger adil degere dogru bir adim atar.
+        if (!h.liman && h.esasDeger > 0.01f)
+            h.esasDeger *= powf(h.temelDeger / h.esasDeger, DEGERLEME_YAKINSAMA_GUNLUK);
     }
     GunlukFinansman(o);
     if (o.gun - o.sonTemettuGunu >= TEMETTU_PERIYOT_GUN) TemettuOde(o);
     BilancoKontrolEt(o);
+    DegerlemeKontrolEt(o);
+
+    // Net deger gecmisi (ana grafigin "Net Deger" modu icin; gunde bir nokta).
+    o.netGecmisi.push_back(o.NetDeger());
+    if (o.netGecmisi.size() > 720) o.netGecmisi.erase(o.netGecmisi.begin());
 
     // Sureli senaryo: sure doldu -> skor = net deger. Sonrasinda oyuncu isterse
     // kum havuzu olarak devam eder (skor bir daha degismez).
@@ -90,6 +146,11 @@ static void YeniGun(Oyun& o) {
         o.bitisGunu = sinir;
         o.bitisNetDeger = o.NetDeger();
         o.yeniRekor = RekorNetGuncelle(o.senaryo, o.bitisNetDeger);
+        if (o.Sen().gunluk) {
+            // Gunun Piyasasi: asil rekor O GUNUN skorudur.
+            o.yeniRekor = GunlukSkorGuncelle(o.gunlukTarih, o.bitisNetDeger);
+            BasarimVer(o, B_GUNLUK);
+        }
         HaberBandinaEkle(o, M("SÜRE DOLDU: Skorun ", "TIME IS UP: Your score is ") + Para(o.bitisNetDeger) + ".");
         Cal(o.sesler.rutbeAtlama);
     }
@@ -198,7 +259,7 @@ static void SimulasyonAdimi(Oyun& o, float dt) {
         if (h.yonetimOlayZamanlayici <= 0.0f) {
             o.yonetimOlayiAcik = true;
             o.yonetimHisseIndex = i;
-            o.yonetimSablonIndex = GetRandomValue(0, (int)YONETIM_OLAYLARI.size() - 1);
+            o.yonetimSablonIndex = g_rngOyuncu.Aralik(0, (int)YONETIM_OLAYLARI.size() - 1);
             break;
         }
     }
@@ -208,6 +269,7 @@ static void SimulasyonAdimi(Oyun& o, float dt) {
     else o.bantKaydirma += dt * 70.0f;
 
     RehberGuncelle(o, dt);
+    GorevGuncelle(o, dt);
 }
 
 // Sadece GORSEL durum (animasyonlu sayaclar, parcaciklar, toastlar). Simulasyon
