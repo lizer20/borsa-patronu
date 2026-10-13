@@ -28,6 +28,7 @@ python build.py test     denge testi + görsel test (yerleşim denetçisi)
 python build.py web      tarayıcı sürümünü derler (web_cikti/)
 python build.py paket    hepsi + release/ altına zip'ler
 python build.py sun      web sürümünü http://localhost:8765 adresinde sunar
+python build.py yayinla  web sürümünü derleyip GitHub Pages'e gönderir
 ```
 
 `build.bat` çift tıklanınca `python build.py` çalıştırır. **Bir şey değiştirdikten
@@ -343,6 +344,23 @@ riskli seçenek (anında kazanç, kalıcı oynaklık) ya da güvenli. 6 karar ş
 - Doğrulandı (yerel sunucu + tarayıcı): menü, Türkçe glifler, alım, duraklatma, kayıt
   ve sayfa yenilendikten sonra yükleme.
 
+## Yayınlama (GitHub Pages)
+
+Oyunun canlı adresi: **https://emrebiltekin.me/borsa-patronu/**
+(`lizer20.github.io/borsa-patronu` da buraya yönlenir; hesabın Pages özel alan adı
+`emrebiltekin.me`.)
+
+- `python build.py yayinla` web sürümünü derler ve `gh-pages` dalına gönderir.
+  O dal **her seferinde tek commit olarak baştan yazılır** (zorla gönderim): içinde
+  yalnızca derlenmiş sayfa durur, geçmişi tutulmaz. Kaynak kodun geçmişi `main`'dedir.
+- Pages ayarı: kaynak `gh-pages` dalı, kök klasör. Yayın 1–2 dakika sürer.
+- Sayfa tam bir tarayıcı sekmesidir (iframe değil); sekmenin en-boy oranı 16:9
+  olmadığı için sahnenin pencereye uyması burada özellikle önemlidir.
+- Kayıtlar tarayıcının `localStorage` alanında, alan adına özel tutulur: adres
+  değişirse (ör. özel alan adı kaldırılırsa) oyuncuların kayıtları görünmez olur.
+- Paylaşım önizlemesi (`og:image`) `web/kabuk.html` içinde TAM adresle yazılıdır;
+  alan adı değişirse orayı da güncelle.
+
 ## Yayınlama (itch.io)
 
 `python build.py paket` iki dosya üretir:
@@ -368,6 +386,9 @@ Dikkat edilecekler:
 
 ## Sürümleme
 
+- Uzak depo: **https://github.com/lizer20/borsa-patronu** (herkese açık). Commit'ler
+  GitHub'ın `noreply` adresiyle atılır (depo ayarında tanımlı); kişisel e-posta
+  depoya girmez.
 - Proje bir **git deposu** (v2.0 ile). Her sürüm `vX.Y` etiketiyle işaretlenir;
   fark görmek için `git diff v1.1 v2.0`, geri almak için `git checkout`.
 - `updates/v0.1 … v1.1` klasörleri git öncesi elle alınmış kopyalardır; **donduruldu**,

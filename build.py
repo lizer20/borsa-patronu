@@ -8,6 +8,7 @@ Borsa Patronu - derleme betigi (tek komutla her sey).
     python build.py web       tarayici surumunu derler (web_cikti/)
     python build.py paket     hepsini yapar, release/ altina zip'leri koyar
     python build.py sun       web surumunu http://localhost:8765 adresinde sunar
+    python build.py yayinla   web surumunu derler ve GitHub Pages'e gonderir
 
 Surum numarasi TEK yerden okunur: src/surum.h
 Arac yollari asagidaki sabitlerde; baska bir makinede buralari duzelt.
@@ -18,6 +19,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import zipfile
 
 KOK = os.path.dirname(os.path.abspath(__file__))
@@ -170,6 +172,11 @@ def web_derle():
         print(cikti[-3000:])
     if s.returncode != 0:
         hata("web derlemesi basarisiz")
+    # Sayfanin ek dosyalari: sekme simgesi ve paylasim onizleme gorseli.
+    shutil.copyfile(os.path.join(KOK, "borsa_patronu.ico"), os.path.join(cikti_dizin, "favicon.ico"))
+    kapak = os.path.join(KOK, "sayfa_gorselleri", "kapak_630x500.png")
+    if os.path.exists(kapak):
+        shutil.copyfile(kapak, os.path.join(cikti_dizin, "kapak.png"))
     dosyalar = sorted(os.listdir(cikti_dizin))
     toplam = sum(os.path.getsize(os.path.join(cikti_dizin, d)) for d in dosyalar) / 1e6
     print("  tamam: web_cikti/ (%s) toplam %.1f MB" % (", ".join(dosyalar), toplam))
@@ -209,8 +216,57 @@ def paketle():
     zweb = os.path.join(KOK, "release", "BorsaPatronu-%s-web.zip" % s)
     with zipfile.ZipFile(zweb, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         for ad in sorted(os.listdir(web)):
-            z.write(os.path.join(web, ad), ad)
+            if not ad.startswith("."):
+                z.write(os.path.join(web, ad), ad)
     print("  %s (%.1f MB)" % (os.path.relpath(zweb, KOK), os.path.getsize(zweb) / 1e6))
+
+
+def yayinla():
+    """Web surumunu GitHub Pages'e gonderir.
+
+    Yayin dali `gh-pages`dir ve HER SEFERINDE tek commit olarak bastan yazilir
+    (zorla gonderim): icinde sadece derlenmis sayfa durur, gecmisi tutulmaz;
+    kaynak kodun gecmisi `main` dalindadir. Sayfa adresi:
+        https://<kullanici>.github.io/<depo>/
+    """
+    web = web_derle()
+    s = surum()
+
+    def git(*arg, cwd=KOK):
+        return subprocess.run(["git"] + list(arg), cwd=cwd, capture_output=True, text=True,
+                              encoding="utf-8", errors="replace")
+
+    uzak = git("remote", "get-url", "origin").stdout.strip()
+    if not uzak:
+        hata("git 'origin' uzak deposu tanimli degil")
+    ad = git("config", "user.name").stdout.strip() or "Borsa Patronu"
+    eposta = git("config", "user.email").stdout.strip() or "noreply@example.com"
+
+    print("== GitHub Pages ==")
+    gecici = tempfile.mkdtemp(prefix="borsa_pages_")
+    try:
+        for dosya in os.listdir(web):
+            shutil.copyfile(os.path.join(web, dosya), os.path.join(gecici, dosya))
+        # .nojekyll: GitHub dosyalari oldugu gibi sunsun (Jekyll'den gecirmesin).
+        open(os.path.join(gecici, ".nojekyll"), "w").close()
+        adimlar = [
+            ("init", "-q", "-b", "gh-pages"),
+            ("add", "-A"),
+            ("-c", "user.name=" + ad, "-c", "user.email=" + eposta, "commit", "-q", "-m", "Web surumu " + s),
+            ("push", "-f", uzak, "gh-pages"),
+        ]
+        for adim in adimlar:
+            sonuc = git(*adim, cwd=gecici)
+            if sonuc.returncode != 0:
+                print(sonuc.stdout + sonuc.stderr)
+                hata("git " + adim[0] + " basarisiz")
+        print("  gh-pages dalina gonderildi (%s)" % s)
+    finally:
+        shutil.rmtree(gecici, ignore_errors=True)
+
+    m = re.search(r"github\.com[:/]([^/]+)/([^/.]+)", uzak)
+    if m:
+        print("  adres: https://%s.github.io/%s/   (yayin 1-2 dakika surebilir)" % (m.group(1).lower(), m.group(2)))
 
 
 def sun():
@@ -245,6 +301,8 @@ def main():
         paketle()
     elif hedef == "sun":
         sun()
+    elif hedef == "yayinla":
+        yayinla()
     else:
         print(__doc__)
         hata("bilinmeyen hedef: " + hedef)

@@ -7,6 +7,8 @@ Türkçe ve İngilizce.
 *A stock market tycoon game written in C++17 + raylib. Runs on Windows and in the
 browser. Turkish and English. (English summary below.)*
 
+### ▶ Tarayıcıda oyna / Play in your browser: **https://emrebiltekin.me/borsa-patronu/**
+
 ![Borsa Patronu](sayfa_gorselleri/kapak_630x500.png)
 
 ## Oyun
@@ -31,6 +33,7 @@ python build.py test     denge testi + görsel test (yerleşim denetçisi)
 python build.py web      tarayıcı sürümü (web_cikti/)
 python build.py paket    hepsi + release/ altına zip'ler
 python build.py sun      web sürümünü http://localhost:8765 adresinde sunar
+python build.py yayinla  web sürümünü derleyip GitHub Pages'e gönderir
 ```
 
 Araç yolları `build.py` dosyasının başındaki sabitlerdedir. Derlenen tek dosya
