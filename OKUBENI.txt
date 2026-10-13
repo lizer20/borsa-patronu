@@ -1,0 +1,37 @@
+BORSA PATRONU  -  v1.1
+======================
+
+Kucuk bir sermayeyle borsa imparatorlugu kurdugun, Turkce bir borsa yonetim
+simulasyonu. 6 hisseyi al-sat, haberleri ve kuresel gelismeleri takip et,
+rutbe atladikca yeni hisselerin kilidini ac, bir sirketin yarisindan fazlasini
+toplayip patronu ol ve yonetim kararlarini sen ver.
+
+NASIL OYNANIR
+-------------
+- Her sey fare ile: sol paneldeki AL / SAT butonlari, altindaki "Islem Adedi".
+- Ust sagdaki "Duraklat" butonu duraklatma menusunu acar:
+  Kaydet / Ayarlar / Ana Menu / Cikis.
+- Haberler duyurulduktan BIRKAC SANIYE SONRA fiyata yansir - o arada okuyup
+  karar vermen icin haber bandi sabit kalir. Iyi mi kotu mu oldugunu sana
+  soylemiyoruz; bunu tahmin etmek oyunun bir parcasi.
+- Bir sirkette 501/1000 hisseye ulasirsan sirketi devralirsin ve periyodik
+  yonetim kararlari gelir: riskli secim hizli kazandirir ama o hisseye kalici
+  oynaklik ekler.
+
+KAYIT
+-----
+Oyun, kaydini bu .exe'nin yanindaki "borsa_kayit.sav" dosyasina yazar.
+Oyunu tasirsan kaydini da yanina alman yeterli. Cikarken kaydetmeyi
+unutursan oyun sana sorar.
+
+CALISTIRMA / GUVENLIK UYARISI
+-----------------------------
+Windows 10/11, 64 bit. OpenGL 3.3 destegi gerekir. Kurulum gerekmez,
+yanina hicbir dosya koymana gerek yok - tek .exe.
+
+Oyun kod imzalama sertifikasi ile imzali OLMADIGI icin Windows SmartScreen
+"Bilinmeyen yayimci" uyarisi verebilir. Bu bagimsiz gelistiricilerin imzasiz
+programlarinda normaldir. Calistirmak icin:
+  "Daha fazla bilgi"  ->  "Yine de calistir"
+
+Iyi kazanclar!

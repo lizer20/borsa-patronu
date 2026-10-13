@@ -1,0 +1,17 @@
+# Derleme ciktilari
+*.exe
+*.o
+/web_cikti/
+/test/cikti/
+
+# Dagitim paketleri ve eski elle alinmis snapshot'lar (ikili dosyalar; depoya girmez)
+/release/
+/updates/
+
+# Oyuncuya ait veriler - ASLA depoya/pakete girmez
+borsa_kayit.sav
+borsa_profil.sav
+screenshot*.png
+
+# Yerel arac ayarlari
+AGENTS.md
