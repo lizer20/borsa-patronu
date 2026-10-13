@@ -432,7 +432,7 @@ Dikkat edilecekler:
 
 1. Bu dosya (`PROJE_NOTLARI.md`) proje kökünde, `borsa_patronu.cpp` ile aynı klasörde durur.
 2. Projenin konumu: `C:\Users\Lizer\Desktop\borsa_patronu\`.
-3. Yerel asistan ayar klasöründeki tek satırlık köprü dosyasını **silme**. İçeriği yalnızca
-   `@../PROJE_NOTLARI.md` satırıdır ve kullanılan kodlama asistanının bu notları her
-   oturumda otomatik okumasını sağlar. Notların kendisi bilerek proje kökünde ve
-   tarafsız isimle tutuluyor.
+3. Notların kodlama asistanına her oturumda otomatik okutulması, depoya **girmeyen**
+   yerel bir köprü dosyasıyla sağlanır (asistanın proje içindeki yerel ayar klasöründe,
+   tek satır: `@../PROJE_NOTLARI.md`). O klasörü silme. Depo herkese açık olduğu için
+   klasör `.git/info/exclude` ile yok sayılır ve burada adıyla anılmaz.
