@@ -1,0 +1,6 @@
+# Kaynaklar her yerde LF kalsin (duzenleme betikleri LF varsayiyor; Windows'ta
+# git'in satir sonlarini CRLF'e cevirmesini engeller).
+* text=auto eol=lf
+*.bat text eol=crlf
+*.png binary
+*.ico binary
