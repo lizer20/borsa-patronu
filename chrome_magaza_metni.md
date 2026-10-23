@@ -49,6 +49,8 @@
   sayfaya (ve diğer tüm diller için genel) `borsa_patronu_tanitim_en.mp4`.
   YouTube'da "Çocuklar için yapılmadı" seç; başlık önerisi:
   "Borsa Patronu - Tanıtım" / "Borsa Patronu - Trailer".
+- **Gizlilik politikası URL'si:** https://emrebiltekin.me/borsa-patronu/gizlilik.html
+  (`web/gizlilik.html`, TR + EN; `build.py yayinla` ile siteye gider).
 - **Resmî URL / ana sayfa:** https://emrebiltekin.me/borsa-patronu/
 - **Destek URL'si:** https://github.com/lizer20/borsa-patronu/issues
 

@@ -181,6 +181,8 @@ def web_derle():
         hata("web derlemesi basarisiz")
     # Sayfanin ek dosyalari: yardimci betik, sekme simgesi ve paylasim onizleme gorseli.
     shutil.copyfile(os.path.join(KOK, "web", "kabuk.js"), os.path.join(cikti_dizin, "kabuk.js"))
+    # Gizlilik politikasi (Chrome Web Store adresini ister): .../borsa-patronu/gizlilik.html
+    shutil.copyfile(os.path.join(KOK, "web", "gizlilik.html"), os.path.join(cikti_dizin, "gizlilik.html"))
     shutil.copyfile(os.path.join(KOK, "borsa_patronu.ico"), os.path.join(cikti_dizin, "favicon.ico"))
     kapak = os.path.join(KOK, "sayfa_gorselleri", "kapak_630x500.png")
     if os.path.exists(kapak):
@@ -226,9 +228,10 @@ def chrome_paketle():
     shutil.rmtree(hedef, ignore_errors=True)
     os.makedirs(os.path.join(hedef, "simge"))
 
-    # 1) Oyunun kendisi (web derlemesi). Paylasim onizleme gorseli uzantida gereksiz.
+    # 1) Oyunun kendisi (web derlemesi). Paylasim onizleme gorseli ve gizlilik
+    #    sayfasi (web sitesinde duruyor) uzantida gereksiz.
     for ad in os.listdir(web):
-        if ad != "kapak.png":
+        if ad not in ("kapak.png", "gizlilik.html"):
             shutil.copyfile(os.path.join(web, ad), os.path.join(hedef, ad))
     # 2) Uzantiya ozel dosyalar
     shutil.copyfile(os.path.join(KOK, "chrome", "arkaplan.js"), os.path.join(hedef, "arkaplan.js"))

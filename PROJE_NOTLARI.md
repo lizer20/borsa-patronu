@@ -623,6 +623,9 @@ sekmede açılır (`chrome/arkaplan.js`). İlk kurulumda da bir kez açılır.
   geçiş çizilir. Ses izi oyunun kendi müziğidir (`MuzikOrnekleri()`). Sabit tohum: iki dil
   birebir aynı oyunu gösterir. ffmpeg (libx264) gerekir; bu makinede winget ile kurulu.
   Üretim sırasında bilgisayardan ses çıkmaz (`sesAcik = false`).
+- **Gizlilik politikası:** `web/gizlilik.html` → https://emrebiltekin.me/borsa-patronu/gizlilik.html
+  (mağaza zorunlu tutuyor). Oyun bir gün veri toplamaya başlarsa (analitik, skor sunucusu)
+  bu sayfa ve mağazadaki "Veri kullanımı" formu **aynı anda** güncellenmeli.
 - Sayfa metni, gizlilik formunun cevapları ve adım adım yükleme:
   `chrome_magaza_metni.md`. Geliştirici hesabı (tek seferlik 5 $) ve yükleme
   **kullanıcının kendi hesabıyla** yapılır.
