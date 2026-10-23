@@ -38,6 +38,12 @@
   `1_oyun`, `2_oyun_yuzde`, `3_emirler`, `4_english`, `5_menu` — hepsi gerçek oyundan.
 - **Küçük tanıtım kutucuğu (440×280):** `kucuk_tanitim_440x280.png`
 - **Vitrin kutucuğu (1400×560, isteğe bağlı):** `buyuk_tanitim_1400x560.png`
+- **Tanıtım videosu:** mağaza yalnızca **YouTube bağlantısı** kabul eder. `python build.py video`
+  → `release/video/` altındaki videoları YouTube'a yükle (görünürlük: "Liste dışı" yeterli),
+  bağlantıyı yapıştır: Türkçe sayfaya `borsa_patronu_tanitim_tr.mp4`, İngilizce
+  sayfaya (ve diğer tüm diller için genel) `borsa_patronu_tanitim_en.mp4`.
+  YouTube'da "Çocuklar için yapılmadı" seç; başlık önerisi:
+  "Borsa Patronu - Tanıtım" / "Borsa Patronu - Trailer".
 - **Resmî URL / ana sayfa:** https://emrebiltekin.me/borsa-patronu/
 - **Destek URL'si:** https://github.com/lizer20/borsa-patronu/issues
 

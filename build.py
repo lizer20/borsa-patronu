@@ -8,6 +8,7 @@ Borsa Patronu - derleme betigi (tek komutla her sey).
     python build.py web       tarayici surumunu derler (web_cikti/)
     python build.py chrome    Chrome Web Store uzantisi paketini yapar ve denetler
     python build.py magaza    magaza gorsellerini uretir (gercek oyundan ekran goruntuleri)
+    python build.py video     tanitim videolari (Turkce + Ingilizce) -> release/video/
     python build.py paket     hepsini yapar, release/ altina zip'leri koyar
     python build.py sun       web surumunu http://localhost:8765 adresinde sunar
     python build.py yayinla   web surumunu derler ve GitHub Pages'e gonderir
@@ -334,6 +335,31 @@ def magaza_gorselleri():
         hata("magaza_tanitim_uret.py basarisiz")
 
 
+def tanitim_videolari():
+    """Gercek oynanistan iki tanitim videosu (1920x1080, 30 kare/sn, oyunun muzigi):
+    release/video/borsa_patronu_tanitim_tr.mp4 (yerellestirilmis) ve _en.mp4 (genel).
+    ffmpeg (libx264) PATH'te olmali."""
+    env = ortam()
+    ffmpeg = shutil.which("ffmpeg", path=env.get("PATH"))
+    if not ffmpeg:
+        hata("ffmpeg bulunamadi (winget install Gyan.FFmpeg)")
+    print("== tanitim videolari ==")
+    exe = os.path.join("test", "tanitim_videosu.exe")
+    komut = ["g++", os.path.join("test", "tanitim_videosu.cpp"), "-o", exe, "-O2", "-Wno-unused-function"] +         ORTAK_BAYRAKLAR + TEST_BAGLAMA
+    s = calistir(komut, env, yakala=True)
+    if s.returncode != 0:
+        print(s.stderr)
+        hata("tanitim_videosu derlenemedi")
+    os.makedirs(os.path.join(KOK, "release", "video"), exist_ok=True)
+    for dil in ("tr", "en"):
+        cikti = os.path.join(KOK, "release", "video", "borsa_patronu_tanitim_%s.mp4" % dil)
+        s = calistir([os.path.join(KOK, exe), ffmpeg, dil, cikti], env, yakala=True)
+        print(s.stdout.strip())
+        if s.returncode != 0:
+            print(s.stderr)
+            hata("video uretilemedi: " + dil)
+
+
 def chrome_sun():
     """Paketi, uzantinin guvenlik kuralini (CSP) taklit eden bir sunucuyla acar:
     tarayicida calisiyorsa, magazadan kurulan uzantida da calisir."""
@@ -473,6 +499,8 @@ def main():
         chrome_paketle()
     elif hedef == "magaza":
         magaza_gorselleri()
+    elif hedef == "video":
+        tanitim_videolari()
     elif hedef == "chrome-sun":
         chrome_sun()
     elif hedef == "paket":

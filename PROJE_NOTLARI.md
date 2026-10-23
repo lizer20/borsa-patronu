@@ -33,6 +33,7 @@ python build.py test     denge testi + görsel test (yerleşim denetçisi)
 python build.py web      tarayıcı sürümünü derler (web_cikti/)
 python build.py chrome   Chrome Web Store uzantı paketi (denetimli) → release/
 python build.py magaza   mağaza görselleri (gerçek oyundan ekran görüntüleri)
+python build.py video    tanıtım videoları (TR + EN, 1080p) → release/video/
 python build.py paket    hepsi + release/ altına zip'ler
 python build.py sun      web sürümünü http://localhost:8765 adresinde sunar
 python build.py yayinla  web sürümünü derleyip GitHub Pages'e gönderir
@@ -612,6 +613,14 @@ sekmede açılır (`chrome/arkaplan.js`). İlk kurulumda da bir kez açılır.
   oyunu baştan başlatıp denge testindeki Haberci botuna oynatır, belirli anlarda sahneyi
   kaydeder (sabit tohum: her seferinde aynı kareler). Tanıtım kutucukları (440×280
   zorunlu, 1400×560 isteğe bağlı) `magaza_tanitim_uret.py` ile kodla çizilir.
+- **Tanıtım videoları** `python build.py video` ile üretilir (`release/video/`, depoya
+  girmez): `borsa_patronu_tanitim_tr.mp4` (yerelleştirilmiş) ve `_en.mp4` (genel), 51 sn,
+  1920×1080, 30 kare/sn, H.264 + AAC. `test/tanitim_videosu.cpp` oyunu gizli pencerede
+  **gerçekten oynatır**: imleç gerçek düğmelere tıklar (sahte `Girdi`), uzun bekleyişleri
+  Haberci botu oynar ve video bunları karararak atlar; üstüne yalnızca imleç, alt yazı ve
+  geçiş çizilir. Ses izi oyunun kendi müziğidir (`MuzikOrnekleri()`). Sabit tohum: iki dil
+  birebir aynı oyunu gösterir. ffmpeg (libx264) gerekir; bu makinede winget ile kurulu.
+  Üretim sırasında bilgisayardan ses çıkmaz (`sesAcik = false`).
 - Sayfa metni, gizlilik formunun cevapları ve adım adım yükleme:
   `chrome_magaza_metni.md`. Geliştirici hesabı (tek seferlik 5 $) ve yükleme
   **kullanıcının kendi hesabıyla** yapılır.
@@ -716,6 +725,8 @@ Dikkat edilecekler:
 27. "Oyunu Chrome mağazasına koymaya uygun hale getirebilir miyiz" → Manifest V3
     uzantı paketi (`build.py chrome`, denetimli), satır içi betiklerin kaldırılması,
     gerçek oyundan mağaza görselleri (`build.py magaza`), mağaza metni ve yükleme adımları.
+28. "Bir yerelleştirilmiş bir de genel tanıtım videosu hazırlar mısın" → gerçek oynanıştan
+    Türkçe ve İngilizce tanıtım videoları (`build.py video`).
 
 ## Sonraki adımlar için fikirler (istenmedi)
 

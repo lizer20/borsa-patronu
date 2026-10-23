@@ -48,8 +48,12 @@ static Sound TonUret(const vector<pair<float, float>>& notalar, float sesSeviyes
 // Dongunun basi ve sonu sessizlige yakin oldugu icin (ped akor sinirlarinda
 // sifira iner) tekrar baslarken "tik" duyulmaz. Hafif bir yanki dongunun sonundan
 // basina sarilir, boylece ek yeri de dolar.
-static Sound MuzikUret() {
-    const int hiz = 22050;       // ped agirlikli bir doku icin fazlasiyla yeterli
+static const int MUZIK_ORNEK_HIZI = 22050; // ped agirlikli bir doku icin fazlasiyla yeterli
+
+// Muzigin ham ornekleri (16 bit, tek kanal, MUZIK_ORNEK_HIZI). Oyun bunu bir
+// Sound'a yukler; tanitim videosu ayni muzigi ses izine yazar.
+static vector<short> MuzikOrnekleri() {
+    const int hiz = MUZIK_ORNEK_HIZI;
     const float vurus = 0.75f;   // 80 vurus/dk
     const float akorSuresi = 8.0f * vurus; // iki olcu = 6 sn
     const int akorOrnek = (int)(akorSuresi * hiz);
@@ -115,9 +119,14 @@ static Sound MuzikUret() {
         float s = Clamp(yankili[i], -1.0f, 1.0f);
         veri[i] = (short)(s * 30000.0f);
     }
+    return veri;
+}
+
+static Sound MuzikUret() {
+    vector<short> veri = MuzikOrnekleri();
     Wave dalga{};
-    dalga.frameCount = toplam;
-    dalga.sampleRate = hiz;
+    dalga.frameCount = (unsigned int)veri.size();
+    dalga.sampleRate = MUZIK_ORNEK_HIZI;
     dalga.sampleSize = 16;
     dalga.channels = 1;
     dalga.data = veri.data();
