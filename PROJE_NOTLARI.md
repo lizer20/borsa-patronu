@@ -14,8 +14,9 @@ güvenli limanlar, kredi) açılır; bir şirketin %50+1'ini toplayan patronu ol
 yönetim kararları verir. Aradaki boşluğu kısa görevler doldurur.
 
 - **İki dil:** Türkçe ve İngilizce (ilk açılışta sistem diline göre, menüden değişir).
-- **İki platform:** Windows `.exe` ve tarayıcı (WebAssembly) — aynı kaynaktan.
-  Tarayıcı sürümü telefonda da oynanır (dikey yerleşim).
+- **Üç dağıtım:** Windows `.exe`, tarayıcı (WebAssembly; GitHub Pages ve itch.io) ve
+  **Chrome uzantısı** (Chrome Web Store) — hepsi aynı kaynaktan. Tarayıcı sürümü
+  telefonda da oynanır (dikey yerleşim).
 - **Her pencereye uyar:** sahne pencerenin en-boy oranına göre boyutlanır; yanlarda
   siyah boşluk kalmaz (bkz. Arayüz kuralları).
 - **Asset yok:** ses efektleri, müzik, ikon, kapak görseli ve Türkçe harfler kodla üretilir.
@@ -30,6 +31,8 @@ oyun olduğunu hissettiren" şekilde olmalı. Piyasa/denge kararlarında ölçü
 python build.py          Windows .exe'yi derler ve doğrular
 python build.py test     denge testi + görsel test (yerleşim denetçisi)
 python build.py web      tarayıcı sürümünü derler (web_cikti/)
+python build.py chrome   Chrome Web Store uzantı paketi (denetimli) → release/
+python build.py magaza   mağaza görselleri (gerçek oyundan ekran görüntüleri)
 python build.py paket    hepsi + release/ altına zip'ler
 python build.py sun      web sürümünü http://localhost:8765 adresinde sunar
 python build.py yayinla  web sürümünü derleyip GitHub Pages'e gönderir
@@ -70,7 +73,10 @@ ayrılmış durumda.
 | `src/uygulama.h` | Pencere, sahne boyutunun seçimi, girdi, sabit adımlı kare döngüsü |
 | `test/denge_testi.cpp` + `denge_botlari.h` | Penceresiz denge ve suistimal testi |
 | `test/gorsel_test.cpp` | Ekran görüntüsü + yerleşim denetçisi + tıklama testi |
-| `web/kabuk.html` | Web sürümünün sayfa kabuğu |
+| `web/kabuk.html`, `web/kabuk.js` | Web sürümünün sayfa kabuğu ve yardımcı betiği (satır içi betik YOK — bkz. Chrome) |
+| `chrome/` | Chrome uzantısının kendi dosyaları: `manifest.json`, `arkaplan.js`, `_locales/` |
+| `test/magaza_gorselleri.cpp`, `magaza_tanitim_uret.py` | Mağaza görselleri: gerçek oyundan ekran görüntüleri + tanıtım kutucukları |
+| `chrome_magaza_metni.md` | Chrome Web Store sayfa metni, gizlilik cevapları ve yükleme adımları |
 | `build.py`, `build.bat` | Derleme betiği |
 | `borsa_patronu.rc`, `.manifest`, `.ico` | Windows kaynakları (ikon, sürüm bilgisi, manifest) |
 | `ikon_uret.py`, `kapak_uret.py` | İkonu ve itch.io kapak görselini KODLA üreten betikler |
@@ -573,6 +579,43 @@ Oyunun canlı adresi: **https://emrebiltekin.me/borsa-patronu/**
 - Paylaşım önizlemesi (`og:image`) `web/kabuk.html` içinde TAM adresle yazılıdır;
   alan adı değişirse orayı da güncelle.
 
+## Yayınlama (Chrome Web Store)
+
+Chrome Web Store artık "Chrome uygulaması" kabul etmiyor (2020'den beri kapalı); oyun
+bir **uzantı** olarak yayınlanır: araç çubuğundaki simgeye tıklayınca oyun yeni bir
+sekmede açılır (`chrome/arkaplan.js`). İlk kurulumda da bir kez açılır.
+
+- `python build.py chrome` web sürümünü derler, `build/chrome/` klasörünü kurar ve
+  `release/BorsaPatronu-vX.Y-chrome.zip` üretir. Manifest sürümü `src/surum.h`'den
+  yazılır (`v2.1` → `2.1.0`); her yüklemede bir öncekinden büyük olmalı.
+- **Manifest V3 kuralları ve neden uyuyoruz:**
+  - Uzaktan kod yasak → oyunun tamamı (JS + WASM) pakette.
+  - Uzantı sayfalarında **satır içi betik ve `onclick=` gibi öznitelikler yasak** →
+    sayfa betiği `web/kabuk.js`'e taşındı (web sitesi de aynı dosyayı kullanır).
+  - `eval` / `new Function` yasak → emscripten `-sDYNAMIC_EXECUTION=0` ile derlenir.
+  - WebAssembly için CSP'de `'wasm-unsafe-eval'` gerekir (manifestte).
+  - **Hiçbir izin istenmez** (sekme açmak izin gerektirmez); her izin mağazada gerekçe
+    ve daha uzun inceleme demektir.
+- `build.py chrome` bunların hepsini **denetler** ve biri bozulursa paket üretmez:
+  manifestin andığı dosyalar, simge boyutları, ad ≤ 45 / açıklama ≤ 132 karakter,
+  izin yok, satır içi betik yok, eval yok, betiklerde dış adres yok.
+- **Yerel deneme:** `python build.py chrome-sun` paketi uzantının CSP başlığıyla
+  `http://localhost:8766` adresinde sunar; orada çalışıyorsa uzantıda da çalışır
+  (doğrulandı: CSP ihlali ve konsol hatası yok, oyun başlıyor). Gerçek uzantı olarak
+  denemek için Chrome'da `chrome://extensions` → Geliştirici modu → "Paketlenmemiş öğe
+  yükle" → `build/chrome`.
+- Kayıtlar uzantının kendi `localStorage` alanındadır: web sitesindeki kayıtla
+  **ortak değildir**. Uzantı kaldırılırsa kayıt da silinir.
+- Simgeler `.exe` ikonuyla aynıdır: `borsa_patronu.ico` içindeki PNG'lerden çıkarılır.
+- **Mağaza görselleri** `python build.py magaza` ile üretilir (`sayfa_gorselleri/chrome/`):
+  ekran görüntüleri 1280×800 ve **gerçektir** — `test/magaza_gorselleri.cpp` Klasik
+  oyunu baştan başlatıp denge testindeki Haberci botuna oynatır, belirli anlarda sahneyi
+  kaydeder (sabit tohum: her seferinde aynı kareler). Tanıtım kutucukları (440×280
+  zorunlu, 1400×560 isteğe bağlı) `magaza_tanitim_uret.py` ile kodla çizilir.
+- Sayfa metni, gizlilik formunun cevapları ve adım adım yükleme:
+  `chrome_magaza_metni.md`. Geliştirici hesabı (tek seferlik 5 $) ve yükleme
+  **kullanıcının kendi hesabıyla** yapılır.
+
 ## Yayınlama (itch.io)
 
 `python build.py paket` iki dosya üretir:
@@ -670,6 +713,9 @@ Dikkat edilecekler:
     Doğrulama sırasında "devral + hep riskli" açığı bulundu ve yönetim kararları
     gerçek bir risk/ödül seçimine çevrildi.
 26. "GitHub Pages'ten yayınlayalım" → `build.py yayinla`, canlı adres.
+27. "Oyunu Chrome mağazasına koymaya uygun hale getirebilir miyiz" → Manifest V3
+    uzantı paketi (`build.py chrome`, denetimli), satır içi betiklerin kaldırılması,
+    gerçek oyundan mağaza görselleri (`build.py magaza`), mağaza metni ve yükleme adımları.
 
 ## Sonraki adımlar için fikirler (istenmedi)
 

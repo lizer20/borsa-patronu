@@ -6,6 +6,8 @@ Borsa Patronu - derleme betigi (tek komutla her sey).
     python build.py           Windows .exe'yi derler ve dogrular
     python build.py test      denge testi + gorsel test (yerlesim denetcisi)
     python build.py web       tarayici surumunu derler (web_cikti/)
+    python build.py chrome    Chrome Web Store uzantisi paketini yapar ve denetler
+    python build.py magaza    magaza gorsellerini uretir (gercek oyundan ekran goruntuleri)
     python build.py paket     hepsini yapar, release/ altina zip'leri koyar
     python build.py sun       web surumunu http://localhost:8765 adresinde sunar
     python build.py yayinla   web surumunu derler ve GitHub Pages'e gonderir
@@ -14,6 +16,8 @@ Surum numarasi TEK yerden okunur: src/surum.h
 Arac yollari asagidaki sabitlerde; baska bir makinede buralari duzelt.
 """
 import hashlib
+import json
+import struct
 import os
 import re
 import shutil
@@ -165,6 +169,8 @@ def web_derle():
              "-I", RAYLIB, weblib, "-DPLATFORM_WEB",
              "-sUSE_GLFW=3", "-sALLOW_MEMORY_GROWTH=1", "-sSTACK_SIZE=1048576",
              "-sEXPORTED_FUNCTIONS=_main,_malloc,_free",
+             # eval / new Function YOK: Chrome uzantisinin guvenlik kurali (CSP) yasaklar.
+             "-sDYNAMIC_EXECUTION=0",
              "--shell-file", "web/kabuk.html"]
     s = calistir(komut, env, yakala=True)
     cikti = (s.stdout + s.stderr).strip()
@@ -172,7 +178,8 @@ def web_derle():
         print(cikti[-3000:])
     if s.returncode != 0:
         hata("web derlemesi basarisiz")
-    # Sayfanin ek dosyalari: sekme simgesi ve paylasim onizleme gorseli.
+    # Sayfanin ek dosyalari: yardimci betik, sekme simgesi ve paylasim onizleme gorseli.
+    shutil.copyfile(os.path.join(KOK, "web", "kabuk.js"), os.path.join(cikti_dizin, "kabuk.js"))
     shutil.copyfile(os.path.join(KOK, "borsa_patronu.ico"), os.path.join(cikti_dizin, "favicon.ico"))
     kapak = os.path.join(KOK, "sayfa_gorselleri", "kapak_630x500.png")
     if os.path.exists(kapak):
@@ -181,6 +188,170 @@ def web_derle():
     toplam = sum(os.path.getsize(os.path.join(cikti_dizin, d)) for d in dosyalar) / 1e6
     print("  tamam: web_cikti/ (%s) toplam %.1f MB" % (", ".join(dosyalar), toplam))
     return cikti_dizin
+
+
+def ico_pngleri(yol):
+    """borsa_patronu.ico icindeki PNG girdilerini {boyut: bayt} olarak doner."""
+    with open(yol, "rb") as f:
+        veri = f.read()
+    _, tip, adet = struct.unpack_from("<HHH", veri, 0)
+    if tip != 1:
+        hata("ikon dosyasi ICO degil: " + yol)
+    sonuc = {}
+    for i in range(adet):
+        w, h, _, _, _, _, uzunluk, ofs = struct.unpack_from("<BBBBHHII", veri, 6 + 16 * i)
+        parca = veri[ofs:ofs + uzunluk]
+        if parca[:8] == b"\x89PNG\r\n\x1a\n":
+            sonuc[w or 256] = parca
+    return sonuc
+
+
+def png_boyutu(veri):
+    return struct.unpack(">II", veri[16:24])
+
+
+def chrome_paketle():
+    """Chrome Web Store'a yuklenecek uzanti paketini hazirlar ve DENETLER.
+
+    Chrome Web Store artik "uygulama" kabul etmiyor; oyun bir UZANTI olarak
+    yayinlanir: arac cubugundaki simgeye tiklayinca oyun yeni sekmede acilir.
+    Oyunun her dosyasi pakettedir (Manifest V3 uzaktan kod yuklemeyi yasaklar),
+    hicbir izin istenmez. Kayitlar uzantinin kendi localStorage alaninda durur.
+    """
+    web = web_derle()
+    s = surum()
+    print("== Chrome uzantisi (%s) ==" % s)
+    hedef = os.path.join(KOK, "build", "chrome")
+    shutil.rmtree(hedef, ignore_errors=True)
+    os.makedirs(os.path.join(hedef, "simge"))
+
+    # 1) Oyunun kendisi (web derlemesi). Paylasim onizleme gorseli uzantida gereksiz.
+    for ad in os.listdir(web):
+        if ad != "kapak.png":
+            shutil.copyfile(os.path.join(web, ad), os.path.join(hedef, ad))
+    # 2) Uzantiya ozel dosyalar
+    shutil.copyfile(os.path.join(KOK, "chrome", "arkaplan.js"), os.path.join(hedef, "arkaplan.js"))
+    shutil.copytree(os.path.join(KOK, "chrome", "_locales"), os.path.join(hedef, "_locales"))
+    # 3) Simgeler: .exe ikonuyla AYNI cizim (ikon_uret.py), .ico icinden cikarilir
+    pngler = ico_pngleri(os.path.join(KOK, "borsa_patronu.ico"))
+    for n in (16, 32, 48, 128):
+        if n not in pngler:
+            hata("ikon dosyasinda %dpx yok (ikon_uret.py'yi calistir)" % n)
+        with open(os.path.join(hedef, "simge", "%d.png" % n), "wb") as f:
+            f.write(pngler[n])
+    # 4) Manifest: surum src/surum.h'den ("v2.1" -> "2.1.0")
+    with open(os.path.join(KOK, "chrome", "manifest.json"), encoding="utf-8") as f:
+        manifest = json.load(f)
+    sayilar = re.findall(r"\d+", s)
+    manifest["version"] = ".".join((sayilar + ["0", "0"])[:3])
+    manifest["version_name"] = s
+    with open(os.path.join(hedef, "manifest.json"), "w", encoding="utf-8", newline="\n") as f:
+        json.dump(manifest, f, ensure_ascii=False, indent=2)
+
+    # ---- DENETIMLER (magaza reddetmeden once burada yakala) ----
+    sorunlar = []
+    def dosya_var(yol):
+        if not os.path.exists(os.path.join(hedef, yol)):
+            sorunlar.append("manifestin andigi dosya yok: " + yol)
+    for yol in list(manifest["icons"].values()) + list(manifest["action"]["default_icon"].values()):
+        dosya_var(yol)
+    dosya_var(manifest["background"]["service_worker"])
+    for boy, yol in manifest["icons"].items():
+        tam = os.path.join(hedef, yol)
+        if os.path.exists(tam):
+            with open(tam, "rb") as f:
+                w, h = png_boyutu(f.read())
+            if (w, h) != (int(boy), int(boy)):
+                sorunlar.append("%s %dx%d, %s olmali" % (yol, w, h, boy))
+    for dil in os.listdir(os.path.join(hedef, "_locales")):
+        with open(os.path.join(hedef, "_locales", dil, "messages.json"), encoding="utf-8") as f:
+            m = json.load(f)
+        if len(m["ad"]["message"]) > 45:
+            sorunlar.append("%s: ad 45 karakteri asiyor" % dil)
+        if len(m["aciklama"]["message"]) > 132:
+            sorunlar.append("%s: aciklama 132 karakteri asiyor (%d)" % (dil, len(m["aciklama"]["message"])))
+    if manifest.get("permissions") or manifest.get("host_permissions"):
+        sorunlar.append("uzanti izin istiyor - gerekmiyor olmali (her izin magazada gerekce ister)")
+    # Uzanti sayfalarinin guvenlik kurali: satir ici betik ve olay ozniteligi yasak,
+    # eval / new Function yasak. Biri sizarsa oyun magazada ACILMAZ.
+    with open(os.path.join(hedef, "index.html"), encoding="utf-8") as f:
+        html = re.sub(r"<!--.*?-->", "", f.read(), flags=re.S)
+    for m in re.finditer(r"<script\b([^>]*)>", html, flags=re.I):
+        if "src=" not in m.group(1):
+            sorunlar.append("index.html icinde satir ici <script> var")
+    if re.search(r"\son[a-z]+\s*=", html, flags=re.I):
+        sorunlar.append("index.html icinde onclick=... gibi olay ozniteligi var")
+    for js in ("index.js", "kabuk.js", "arkaplan.js"):
+        with open(os.path.join(hedef, js), encoding="utf-8") as f:
+            icerik = f.read()
+        if re.search(r"\beval\s*\(|new\s+Function\s*\(", icerik):
+            sorunlar.append(js + " eval / new Function iceriyor")
+        if re.search(r"https?://", icerik) and js != "index.js":
+            sorunlar.append(js + " disaridan bir adrese basvuruyor")
+    if sorunlar:
+        for x in sorunlar:
+            print("  SORUN: " + x)
+        hata("Chrome paketi denetimden gecemedi")
+
+    # ---- paket: manifest.json zip'in KOKUNDE olmali ----
+    os.makedirs(os.path.join(KOK, "release"), exist_ok=True)
+    zyol = os.path.join(KOK, "release", "BorsaPatronu-%s-chrome.zip" % s)
+    with zipfile.ZipFile(zyol, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+        for kok, _, dosyalar in os.walk(hedef):
+            for ad in sorted(dosyalar):
+                tam = os.path.join(kok, ad)
+                z.write(tam, os.path.relpath(tam, hedef).replace(os.sep, "/"))
+    with zipfile.ZipFile(zyol) as z:
+        adlar = z.namelist()
+    if "manifest.json" not in adlar or any(a.endswith(".sav") for a in adlar):
+        hata("chrome paketi beklenmeyen icerik: %s" % adlar)
+    print("  denetim temiz: MV3, izin yok, satir ici betik yok, eval yok, simgeler %s" % sorted(pngler))
+    print("  %s (%.1f MB, %d dosya, surum %s)" % (os.path.relpath(zyol, KOK), os.path.getsize(zyol) / 1e6,
+                                                 len(adlar), manifest["version"]))
+    return hedef
+
+
+def magaza_gorselleri():
+    """sayfa_gorselleri/chrome/ altina magaza gorsellerini uretir: gercek oyundan
+    1280x800 ekran goruntuleri (test/magaza_gorselleri.cpp) + tanitim kutucuklari."""
+    env = ortam()
+    print("== magaza gorselleri ==")
+    os.makedirs(os.path.join(KOK, "sayfa_gorselleri", "chrome"), exist_ok=True)
+    exe = os.path.join("test", "magaza_gorselleri.exe")
+    komut = ["g++", os.path.join("test", "magaza_gorselleri.cpp"), "-o", exe, "-O2", "-Wno-unused-function"] +         ORTAK_BAYRAKLAR + TEST_BAGLAMA
+    s = calistir(komut, env, yakala=True)
+    if s.returncode != 0:
+        print(s.stderr)
+        hata("magaza_gorselleri derlenemedi")
+    s = calistir([os.path.join(KOK, exe)], env, yakala=True)
+    print(s.stdout.strip())
+    if s.returncode != 0:
+        hata("magaza_gorselleri basarisiz")
+    s = calistir([sys.executable, "magaza_tanitim_uret.py"], yakala=True)
+    print(s.stdout.strip())
+    if s.returncode != 0:
+        print(s.stderr)
+        hata("magaza_tanitim_uret.py basarisiz")
+
+
+def chrome_sun():
+    """Paketi, uzantinin guvenlik kuralini (CSP) taklit eden bir sunucuyla acar:
+    tarayicida calisiyorsa, magazadan kurulan uzantida da calisir."""
+    import functools
+    import http.server
+    dizin = os.path.join(KOK, "build", "chrome")
+    if not os.path.exists(os.path.join(dizin, "manifest.json")):
+        hata("once 'python build.py chrome' calistir")
+    with open(os.path.join(dizin, "manifest.json"), encoding="utf-8") as f:
+        csp = json.load(f)["content_security_policy"]["extension_pages"]
+
+    class Isleyici(http.server.SimpleHTTPRequestHandler):
+        def end_headers(self):
+            self.send_header("Content-Security-Policy", csp)
+            super().end_headers()
+
+    print("Chrome paketi (uzanti CSP'siyle): http://localhost:8766  (durdurmak icin Ctrl+C)")
+    http.server.ThreadingHTTPServer(("127.0.0.1", 8766), functools.partial(Isleyici, directory=dizin)).serve_forever()
 
 
 def sha256(yol):
@@ -193,7 +364,8 @@ def sha256(yol):
 def paketle():
     exe_derle()
     testleri_calistir()
-    web = web_derle()
+    web = chrome_paketle()
+    web = os.path.join(KOK, "web_cikti")
     s = surum()
     os.makedirs(os.path.join(KOK, "release"), exist_ok=True)
     print("== paketler ==")
@@ -297,6 +469,12 @@ def main():
         testleri_calistir()
     elif hedef == "web":
         web_derle()
+    elif hedef == "chrome":
+        chrome_paketle()
+    elif hedef == "magaza":
+        magaza_gorselleri()
+    elif hedef == "chrome-sun":
+        chrome_sun()
     elif hedef == "paket":
         paketle()
     elif hedef == "sun":

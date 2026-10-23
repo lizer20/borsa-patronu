@@ -36,6 +36,7 @@ w64devkit ve emscripten ile birlikte gelir) ve Python 3.
 python build.py          Windows .exe
 python build.py test     denge testi + görsel test (yerleşim denetçisi)
 python build.py web      tarayıcı sürümü (web_cikti/)
+python build.py chrome   Chrome Web Store uzantısı (release/ altına zip)
 python build.py paket    hepsi + release/ altına zip'ler
 python build.py sun      web sürümünü http://localhost:8765 adresinde sunar
 python build.py yayinla  web sürümünü derleyip GitHub Pages'e gönderir
