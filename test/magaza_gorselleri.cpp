@@ -7,7 +7,12 @@
 // Magazanin istedigi boyut 1280x800; oyun bu oranda (16:10) "kare" yatay
 // yerlesimi kullanir, yani goruntu oyunun o pencerede GERCEKTEN gorunen halidir.
 //
-// Calistirma:  python build.py magaza   ->  sayfa_gorselleri/chrome/*.png
+// Iki set uretilir (Chrome Web Store'da dil basina ayri gorsel yuklenebilir):
+//   sayfa_gorselleri/chrome/tr/     yerellestirilmis (Turkce arayuz)
+//   sayfa_gorselleri/chrome/genel/  genel (Ingilizce arayuz; diger butun diller)
+// Ikisi de AYNI oyunu gosterir (sabit tohum).
+//
+// Calistirma:  python build.py magaza
 
 #define BORSA_ANA_YOK
 #include "../borsa_patronu.cpp"
@@ -21,15 +26,16 @@ static void Yaz(const char* bicim, ...) { // denge_botlari.h bunu ister
 }
 #include "denge_botlari.h"
 
-static const char* CIKTI = "sayfa_gorselleri/chrome/";
+static string CIKTI = "sayfa_gorselleri/chrome/tr/";
+static bool g_otomatikKarar = true; // yonetim kararini kendisi versin mi
 
 static void Yakala(Uygulama& u, const char* ad) {
     KareCiz(u);
     Image img = LoadImageFromTexture(u.sahne.texture);
     ImageFlipVertical(&img);
-    ExportImage(img, TextFormat("%s%s", CIKTI, ad));
+    ExportImage(img, (CIKTI + ad).c_str());
     UnloadImage(img);
-    printf("  %s%s  (gun %d, rutbe %d, net %.0f TL)\n", CIKTI, ad, u.oyun.gun, u.oyun.rutbeIndex, u.oyun.NetDeger());
+    printf("  %s%s  (gun %d, rutbe %d, net %.0f TL)\n", CIKTI.c_str(), ad, u.oyun.gun, u.oyun.rutbeIndex, u.oyun.NetDeger());
 }
 
 // Bir kare oynar: bot hamlesi + oyunun kendi guncellemesi (arayuz animasyonlari dahil).
@@ -39,8 +45,8 @@ static void Oyna(Uygulama& u, BotDurum& b) {
     // Bot, denge testindeki gibi 0,25 sn'de bir karar verir (yeni haberleri bu
     // pencereye gore tanir); oyun ise her karede guncellenir.
     static int kare = 0;
-    if (++kare % 15 == 0) BotHamle(o, b, 0.25f);
-    if (o.yonetimOlayiAcik) YonetimKarariUygula(o, YonetimBasariOlasiligi(o.hisseler[o.yonetimHisseIndex]) >= 0.55f);
+    if (++kare % 15 == 0 && b.tur >= 0) BotHamle(o, b, 0.25f);
+    if (o.yonetimOlayiAcik && g_otomatikKarar) YonetimKarariUygula(o, YonetimBasariOlasiligi(o.hisseler[o.yonetimHisseIndex]) >= 0.55f);
     if (o.sonPenceresiAcik) o.sonPenceresiAcik = false;
     KareGuncelle(u, dt, Girdi());
 }
@@ -53,7 +59,9 @@ static bool GuzelAn(const Oyun& o) {
     return false;
 }
 
-int main() {
+int main(int argc, char** argv) {
+    const string dil = (argc > 1) ? argv[1] : "tr";
+    CIKTI = string("sayfa_gorselleri/chrome/") + (dil == "en" ? "genel/" : "tr/");
     SetTraceLogLevel(LOG_WARNING);
     SetConfigFlags(FLAG_WINDOW_HIDDEN);
     g_profilKalici = false; // gercek profil dosyasina ASLA yazma
@@ -67,7 +75,7 @@ int main() {
     printf("Magaza gorselleri (1280x800, gercek oyun):\n");
 
     // 1) Ana menu
-    g_dil = Dil::TR;
+    g_dil = (dil == "en") ? Dil::EN : Dil::TR;
     u.ekran = Ekran::MENU;
     for (int i = 0; i < 90; i++) KareGuncelle(u, 1.0f / 60.0f, Girdi());
     Yakala(u, "5_menu_1280x800.png");
@@ -111,20 +119,25 @@ int main() {
     Yakala(u, "3_emirler_1280x800.png");
     u.ui.emirHisse = -1;
 
-    // Ingilizce
-    // Haber bandindaki eski satirlar yazildiklari dilde kalir; bant tamamen
-    // Ingilizce satirlarla yenilenene kadar oyna.
-    g_dil = Dil::EN;
-    const auto eskiBant = o.haberBandi;
-    auto bantEski = [&]() {
-        for (const auto& satir : o.haberBandi)
-            for (const auto& eski : eskiBant)
-                if (satir == eski) return true;
-        return false;
-    };
-    for (int k = 0; k < 60 * 60 * 20 && (bantEski() || !GuzelAn(o)); k++) Oyna(u, b);
-    for (int k = 0; k < 10; k++) Oyna(u, b);
-    Yakala(u, "4_english_1280x800.png");
+    // Devralma ve yonetim karari: bot durur, oyuncu elindekileri satip en ucuz
+    // sirketten 501 hisse toplar (2 sn'de bir 25'er), karar penceresi acilinca cekilir.
+    {
+        for (int i = 0; i < (int)o.hisseler.size(); i++) BotPozisyonKapat(o, i);
+        int ucuz = -1;
+        for (int i = 0; i < HisseSayisi(); i++)
+            if (o.HisseAcikMi(i) && (ucuz < 0 || o.hisseler[i].fiyat < o.hisseler[ucuz].fiyat)) ucuz = i;
+        b.tur = -1; // bot artik islem yapmasin
+        g_otomatikKarar = false;
+        for (int k = 0; k < 60 * 60 * 10 && !o.yonetimOlayiAcik; k++) {
+            if (!o.hisseler[ucuz].sahibiyim && k % 120 == 0) {
+                int n = min(25, 501 - o.hisseler[ucuz].adet);
+                if (n > 0) IslemYap(o, ucuz, true, n, IslemKaynagi::OYUNCU);
+            }
+            Oyna(u, b);
+        }
+        for (int k = 0; k < 20; k++) KareGuncelle(u, 1.0f / 60.0f, Girdi()); // pencere animasyonu otursun
+        Yakala(u, "4_yonetim_1280x800.png");
+    }
 
     UygulamaKapat(u);
     return 0;

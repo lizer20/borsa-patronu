@@ -324,10 +324,12 @@ def magaza_gorselleri():
     if s.returncode != 0:
         print(s.stderr)
         hata("magaza_gorselleri derlenemedi")
-    s = calistir([os.path.join(KOK, exe)], env, yakala=True)
-    print(s.stdout.strip())
-    if s.returncode != 0:
-        hata("magaza_gorselleri basarisiz")
+    for dil, klasor in (("tr", "tr"), ("en", "genel")):
+        os.makedirs(os.path.join(KOK, "sayfa_gorselleri", "chrome", klasor), exist_ok=True)
+        s = calistir([os.path.join(KOK, exe), dil], env, yakala=True)
+        print(s.stdout.strip())
+        if s.returncode != 0:
+            hata("magaza_gorselleri basarisiz: " + dil)
     s = calistir([sys.executable, "magaza_tanitim_uret.py"], yakala=True)
     print(s.stdout.strip())
     if s.returncode != 0:

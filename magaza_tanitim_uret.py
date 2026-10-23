@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """Chrome Web Store tanitim kutucuklari - oyunun kendi paletiyle, KODLA uretilir.
 
-    kucuk_tanitim_440x280.png   magazanin ZORUNLU istedigi kucuk kutucuk
-    buyuk_tanitim_1400x560.png  istege bagli "marquee" (vitrine secilirse kullanilir)
+    <dil>/kucuk_tanitim_440x280.png        magazanin ZORUNLU istedigi kucuk kutucuk
+    <dil>/kayan_yazi_tanitim_1400x560.png  "marquee" (kayan yazi / vitrin) kutucugu
+    magaza_simgesi_128x128.png             magaza simgesi (dilden bagimsiz)
+<dil>: tr (Turkce sayfa) ve genel (Ingilizce; diger butun diller).
 
 Stil kapak_uret.py ile ayni (koyu zemin, yukselen altin cizgi). Ekran goruntuleri
 ise gercek oyundan gelir: test/magaza_gorselleri.cpp (python build.py magaza).
@@ -16,7 +18,7 @@ F = r"C:\Windows\Fonts" + chr(92)
 CIKTI = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sayfa_gorselleri", "chrome")
 
 
-def kutucuk(W, H, alt_yazi, dosya):
+def kutucuk(W, H, alt_yazi, dosya, klasor):
     img = Image.new("RGB", (W, H), ARKA_UST)
     d = ImageDraw.Draw(img)
     for y in range(H):
@@ -82,10 +84,11 @@ def kutucuk(W, H, alt_yazi, dosya):
     d.line([(W // 2 - int(W * 0.2), cy), (W // 2 + int(W * 0.2), cy)], fill=ALTIN, width=max(1, g // 2))
     ortala(alt_yazi, alt, int(H * 0.40), (230, 233, 238), 0)
 
-    os.makedirs(CIKTI, exist_ok=True)
-    yol = os.path.join(CIKTI, dosya)
+    hedef = os.path.join(CIKTI, klasor)
+    os.makedirs(hedef, exist_ok=True)
+    yol = os.path.join(hedef, dosya)
     img.save(yol, "PNG", optimize=True)
-    print("tanitim:", dosya, img.size, os.path.getsize(yol), "bayt")
+    print("tanitim:", klasor + "/" + dosya, img.size, os.path.getsize(yol), "bayt")
 
 
 def magaza_simgesi():
@@ -116,5 +119,10 @@ def magaza_simgesi():
 
 
 magaza_simgesi()
-kutucuk(440, 280, "Borsa Yönetim Oyunu", "kucuk_tanitim_440x280.png")
-kutucuk(1400, 560, "Haberi oku, 5 saniyede karar ver, borsa imparatorluğunu kur", "buyuk_tanitim_1400x560.png")
+# tr/: yerellestirilmis (Turkce sayfa)   genel/: Ingilizce (diger butun diller)
+for klasor, kucuk, buyuk in (
+    ("tr", "Borsa Yönetim Oyunu", "Haberi oku, 5 saniyede karar ver, borsa imparatorluğunu kur"),
+    ("genel", "Stock Market Tycoon", "Read the news, decide in 5 seconds, build your market empire"),
+):
+    kutucuk(440, 280, kucuk, "kucuk_tanitim_440x280.png", klasor)
+    kutucuk(1400, 560, buyuk, "kayan_yazi_tanitim_1400x560.png", klasor)

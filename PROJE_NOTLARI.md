@@ -608,7 +608,9 @@ sekmede açılır (`chrome/arkaplan.js`). İlk kurulumda da bir kez açılır.
 - Kayıtlar uzantının kendi `localStorage` alanındadır: web sitesindeki kayıtla
   **ortak değildir**. Uzantı kaldırılırsa kayıt da silinir.
 - Simgeler `.exe` ikonuyla aynıdır: `borsa_patronu.ico` içindeki PNG'lerden çıkarılır.
-- **Mağaza görselleri** `python build.py magaza` ile üretilir (`sayfa_gorselleri/chrome/`):
+- **Mağaza görselleri** `python build.py magaza` ile üretilir (`sayfa_gorselleri/chrome/`;
+  `tr/` yerelleştirilmiş, `genel/` İngilizce — her birinde 5 ekran görüntüsü + küçük tanıtım
+  + kayan yazı kutucuğu; simge kökte):
   ekran görüntüleri 1280×800 ve **gerçektir** — `test/magaza_gorselleri.cpp` Klasik
   oyunu baştan başlatıp denge testindeki Haberci botuna oynatır, belirli anlarda sahneyi
   kaydeder (sabit tohum: her seferinde aynı kareler). Tanıtım kutucukları (440×280

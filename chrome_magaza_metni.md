@@ -34,10 +34,15 @@
   yoksa "Eğlence / Entertainment".
 - **Mağaza simgesi (128×128):** `sayfa_gorselleri/chrome/magaza_simgesi_128x128.png` —
   Chrome kılavuzuna uygun: çizim 96×96, her kenarda 16 px şeffaf boşluk.
-- **Ekran görüntüleri (1280×800):** `sayfa_gorselleri/chrome/` altındaki
-  `1_oyun`, `2_oyun_yuzde`, `3_emirler`, `4_english`, `5_menu` — hepsi gerçek oyundan.
-- **Küçük tanıtım kutucuğu (440×280):** `kucuk_tanitim_440x280.png`
-- **Vitrin kutucuğu (1400×560, isteğe bağlı):** `buyuk_tanitim_1400x560.png`
+- **Görseller dile göre iki klasörde** (her biri aynı oyunu gösterir):
+  - `sayfa_gorselleri/chrome/genel/` → **genel** (İngilizce arayüz): mağazanın varsayılan /
+    "tüm diller" görselleri ve İngilizce sayfa.
+  - `sayfa_gorselleri/chrome/tr/` → **yerelleştirilmiş** (Türkçe arayüz): Türkçe sayfa.
+  Her klasörde:
+  - **5 ekran görüntüsü (1280×800):** `1_oyun`, `2_oyun_yuzde`, `3_emirler`, `4_yonetim`,
+    `5_menu` — hepsi gerçek oyundan (bot oynar, sabit tohum).
+  - **Küçük tanıtım kutucuğu (440×280):** `kucuk_tanitim_440x280.png`
+  - **Kayan yazı (marquee) tanıtım kutucuğu (1400×560):** `kayan_yazi_tanitim_1400x560.png`
 - **Tanıtım videosu:** mağaza yalnızca **YouTube bağlantısı** kabul eder. `python build.py video`
   → `release/video/` altındaki videoları YouTube'a yükle (görünürlük: "Liste dışı" yeterli),
   bağlantıyı yapıştır: Türkçe sayfaya `borsa_patronu_tanitim_tr.mp4`, İngilizce
