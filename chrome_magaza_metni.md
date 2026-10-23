@@ -32,7 +32,8 @@
 - **Ad ve kısa açıklama** paketten otomatik gelir (`_locales`).
 - **Kategori:** Oyunlar *(Games)*. Uzantı kategorileri zaman zaman değişiyor; "Games"
   yoksa "Eğlence / Entertainment".
-- **Simge:** paketteki 128×128 otomatik kullanılır.
+- **Mağaza simgesi (128×128):** `sayfa_gorselleri/chrome/magaza_simgesi_128x128.png` —
+  Chrome kılavuzuna uygun: çizim 96×96, her kenarda 16 px şeffaf boşluk.
 - **Ekran görüntüleri (1280×800):** `sayfa_gorselleri/chrome/` altındaki
   `1_oyun`, `2_oyun_yuzde`, `3_emirler`, `4_english`, `5_menu` — hepsi gerçek oyundan.
 - **Küçük tanıtım kutucuğu (440×280):** `kucuk_tanitim_440x280.png`

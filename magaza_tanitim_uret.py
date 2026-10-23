@@ -7,7 +7,7 @@
 Stil kapak_uret.py ile ayni (koyu zemin, yukselen altin cizgi). Ekran goruntuleri
 ise gercek oyundan gelir: test/magaza_gorselleri.cpp (python build.py magaza).
 """
-import os, random
+import io, os, random
 from PIL import Image, ImageDraw, ImageFont
 
 ARKA_UST = (14, 17, 23); ARKA_ALT = (8, 10, 14)
@@ -88,5 +88,33 @@ def kutucuk(W, H, alt_yazi, dosya):
     print("tanitim:", dosya, img.size, os.path.getsize(yol), "bayt")
 
 
+def magaza_simgesi():
+    """Magazanin istedigi 128x128 simge. Chrome'un kilavuzuna gore cizim 96x96'dir
+    ve her kenarda 16 px SEFFAF bosluk birakilir (magaza simgeyi kendi zeminine
+    koyar; kenara dayanan simge digerlerinden iri ve kaba gorunur). Cizim, .exe
+    ve uzanti simgesiyle AYNIDIR: borsa_patronu.ico icindeki 256 px'lik PNG."""
+    import struct
+    kok = os.path.dirname(os.path.abspath(__file__))
+    veri = open(os.path.join(kok, "borsa_patronu.ico"), "rb").read()
+    adet = struct.unpack_from("<HHH", veri, 0)[2]
+    en_buyuk = None
+    for i in range(adet):
+        w, _, _, _, _, _, uzunluk, ofs = struct.unpack_from("<BBBBHHII", veri, 6 + 16 * i)
+        w = w or 256
+        if en_buyuk is None or w > en_buyuk[0]:
+            en_buyuk = (w, veri[ofs:ofs + uzunluk])
+    kaynak = Image.open(io.BytesIO(en_buyuk[1])).convert("RGBA").resize((96, 96), Image.LANCZOS)
+    # koseleri hafifce yuvarla (magazadaki diger simgelerle uyumlu)
+    maske = Image.new("L", (96, 96), 0)
+    ImageDraw.Draw(maske).rounded_rectangle([0, 0, 95, 95], radius=14, fill=255)
+    kaynak.putalpha(maske)
+    simge = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
+    simge.paste(kaynak, (16, 16), kaynak)
+    yol = os.path.join(CIKTI, "magaza_simgesi_128x128.png")
+    simge.save(yol, "PNG", optimize=True)
+    print("simge:", os.path.basename(yol), simge.size, os.path.getsize(yol), "bayt")
+
+
+magaza_simgesi()
 kutucuk(440, 280, "Borsa Yönetim Oyunu", "kucuk_tanitim_440x280.png")
 kutucuk(1400, 560, "Haberi oku, 5 saniyede karar ver, borsa imparatorluğunu kur", "buyuk_tanitim_1400x560.png")
