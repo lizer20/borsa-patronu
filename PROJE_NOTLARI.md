@@ -75,6 +75,7 @@ ayrılmış durumda.
 | `test/denge_testi.cpp` + `denge_botlari.h` | Penceresiz denge ve suistimal testi |
 | `test/gorsel_test.cpp` | Ekran görüntüsü + yerleşim denetçisi + tıklama testi |
 | `web/kabuk.html`, `web/kabuk.js` | Web sürümünün sayfa kabuğu ve yardımcı betiği (satır içi betik YOK — bkz. Chrome) |
+| `web/site.webmanifest`, `web/sw.js` | Kurulabilir uygulama (PWA): manifest ve internetsiz açılış için service worker |
 | `chrome/` | Chrome uzantısının kendi dosyaları: `manifest.json`, `arkaplan.js`, `_locales/` |
 | `test/magaza_gorselleri.cpp`, `magaza_tanitim_uret.py` | Mağaza görselleri: gerçek oyundan ekran görüntüleri + tanıtım kutucukları |
 | `chrome_magaza_metni.md` | Chrome Web Store sayfa metni, gizlilik cevapları ve yükleme adımları |
@@ -580,6 +581,29 @@ Oyunun canlı adresi: **https://emrebiltekin.me/borsa-patronu/**
 - Paylaşım önizlemesi (`og:image`) `web/kabuk.html` içinde TAM adresle yazılıdır;
   alan adı değişirse orayı da güncelle.
 
+### Kurulabilir uygulama (PWA, ChromeOS)
+
+Site bir **kurulabilir web uygulamasıdır**: ChromeOS'ta, masaüstü Chrome/Edge'de ve
+Android'de adres çubuğunda "Yükle" simgesi çıkar; kurulunca başlatıcıda/rafta kendi
+simgesiyle, kendi penceresinde ve **internetsiz** açılır. ChromeOS'ta bir uzantı
+başlatıcıda uygulama olarak görünmez; Chromebook kullanıcısına doğru yol budur.
+
+- `web/site.webmanifest`: ad, renkler, simgeler (192, 512 ve "maskable" 512) ve
+  ChromeOS'un zengin kurulum penceresi için 3 ekran görüntüsü (1280×800, `form_factor:
+  wide`). Simgeler `build.py` içinde `ikon_uret.py`'nin çizimiyle **kodla** üretilir;
+  ekran görüntüleri mağaza görsellerinin İngilizce setinden kopyalanır (`build.py magaza`).
+- `web/sw.js`: **önce ağ** stratejisi — internet varsa her dosya taze gelir (yeni sürüm
+  yayınlanınca oyuncu eski kodda takılı kalmaz), yoksa son kopya önbellekten verilir.
+  `kabuk.js` onu yalnızca http(s) sayfasında ve iframe dışında kaydeder: Chrome
+  uzantısında ve itch.io'da çalışmaz.
+- Kurulan uygulama sitenin `localStorage`'ını kullanır: **sitedeki kayıtla ortaktır**.
+- Chrome uzantısına PWA dosyaları girmez; `build.py chrome` manifest bağlantısını
+  uzantının `index.html`'inden siler ve denetler.
+- **ChromeOS "App Mall"** Google'ın seçtiği bir vitrindir, doğrudan başvuru formu yok.
+  İçerik Google Play'den ve kurulabilir web uygulamalarından gelir; oraya girme şansı
+  için yol Play Store'dur: PWA, Bubblewrap ile Trusted Web Activity olarak paketlenip
+  Play'e yüklenir (Play geliştirici hesabı, tek seferlik 25 $). Henüz yapılmadı.
+
 ## Yayınlama (Chrome Web Store)
 
 **Mağaza sayfası (yayında, 27 Ekim 2026):** https://chromewebstore.google.com/detail/borsa-patronu/pihnfdifhbbbdiickccdkijpnlddojhj
@@ -738,6 +762,9 @@ Dikkat edilecekler:
     Türkçe ve İngilizce tanıtım videoları (`build.py video`).
 29. Mağaza formu soruları (tek amaç, uzak kod: Hayır, veri kullanımı: hiçbiri), gizlilik
     politikası sayfası; uzantı incelemeden geçti ve **yayınlandı** (27 Ekim 2026).
+30. "ChromeOS'ta 'Install' düğmesi yok, App Mall'da da yok, oraya nasıl ekleriz" → site
+    kurulabilir uygulama (PWA) yapıldı: manifest, kodla üretilen simgeler, internetsiz
+    açılış (`web/sw.js`). App Mall için yol Play Store (TWA) — kullanıcıya bırakıldı.
 
 ## Sonraki adımlar için fikirler (istenmedi)
 

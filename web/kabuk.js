@@ -44,3 +44,12 @@ window.addEventListener('mousedown', function () {
 window.addEventListener('keydown', function (e) {
   if (e.code === 'Space') e.preventDefault();
 });
+
+// Kurulabilir uygulama (PWA): internetsiz acilis icin service worker (sw.js).
+// Yalnizca web sitesinde: Chrome uzantisinda (chrome-extension:) ve bir
+// iframe'in icinde (itch.io) kaydedilmez.
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && window.self === window.top) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  });
+}

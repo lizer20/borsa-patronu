@@ -187,10 +187,44 @@ def web_derle():
     kapak = os.path.join(KOK, "sayfa_gorselleri", "kapak_630x500.png")
     if os.path.exists(kapak):
         shutil.copyfile(kapak, os.path.join(cikti_dizin, "kapak.png"))
+    pwa_dosyalari(cikti_dizin)
     dosyalar = sorted(os.listdir(cikti_dizin))
     toplam = sum(os.path.getsize(os.path.join(cikti_dizin, d)) for d in dosyalar) / 1e6
     print("  tamam: web_cikti/ (%s) toplam %.1f MB" % (", ".join(dosyalar), toplam))
     return cikti_dizin
+
+
+# Kurulabilir uygulamanin (PWA) dosyalari; Chrome uzantisina GIRMEZ (uzanti
+# kendi manifestiyle kurulur, service worker'i ise arkaplan.js'dir).
+PWA_DOSYALARI = ("site.webmanifest", "sw.js", "simge-192.png", "simge-512.png", "simge-maskeli-512.png",
+                 "ekran-oyun.png", "ekran-yuzde.png", "ekran-yonetim.png")
+
+
+def pwa_dosyalari(cikti_dizin):
+    """Web surumunu "kurulabilir uygulama" yapar: ChromeOS, Chrome ve Android
+    adres cubugunda "Yukle" dugmesi cikar; kurulunca kendi penceresinde ve
+    internetsiz acilir. Simgeler ikon_uret.py'nin cizimiyle KODLA uretilir;
+    ekran goruntuleri magaza gorsellerinden (gercek oyun, Ingilizce set)."""
+    sys.path.insert(0, KOK)
+    sys.dont_write_bytecode = True  # depoda __pycache__ birakmasin
+    import ikon_uret
+    for ad, px, n in (("simge-192.png", ikon_uret.ikon_ciz(192), 192),
+                      ("simge-512.png", ikon_uret.ikon_ciz(512), 512),
+                      ("simge-maskeli-512.png", ikon_uret.maskeli_ikon_ciz(512), 512)):
+        with open(os.path.join(cikti_dizin, ad), "wb") as f:
+            f.write(ikon_uret.png_yaz(px, n))
+    for kaynak, hedef in (("1_oyun", "ekran-oyun"), ("2_oyun_yuzde", "ekran-yuzde"), ("4_yonetim", "ekran-yonetim")):
+        yol = os.path.join(KOK, "sayfa_gorselleri", "chrome", "genel", kaynak + "_1280x800.png")
+        if not os.path.exists(yol):
+            hata("PWA ekran goruntusu yok (python build.py magaza): " + yol)
+        shutil.copyfile(yol, os.path.join(cikti_dizin, hedef + ".png"))
+    for ad in ("site.webmanifest", "sw.js"):
+        shutil.copyfile(os.path.join(KOK, "web", ad), os.path.join(cikti_dizin, ad))
+    with open(os.path.join(cikti_dizin, "site.webmanifest"), encoding="utf-8") as f:
+        m = json.load(f)
+    for x in m["icons"] + m["screenshots"]:
+        if not os.path.exists(os.path.join(cikti_dizin, x["src"])):
+            hata("site.webmanifest'in andigi dosya yok: " + x["src"])
 
 
 def ico_pngleri(yol):
@@ -229,10 +263,16 @@ def chrome_paketle():
     os.makedirs(os.path.join(hedef, "simge"))
 
     # 1) Oyunun kendisi (web derlemesi). Paylasim onizleme gorseli ve gizlilik
-    #    sayfasi (web sitesinde duruyor) uzantida gereksiz.
+    #    sayfasi (web sitesinde duruyor) ve PWA dosyalari uzantida gereksiz.
     for ad in os.listdir(web):
-        if ad not in ("kapak.png", "gizlilik.html"):
+        if ad not in ("kapak.png", "gizlilik.html") + PWA_DOSYALARI:
             shutil.copyfile(os.path.join(web, ad), os.path.join(hedef, ad))
+    with open(os.path.join(hedef, "index.html"), encoding="utf-8") as f:
+        sayfa = f.read()
+    # emscripten sayfayi kucultur (tirnaksiz oznitelik, tek satir): genis eslestir
+    sayfa = re.sub(r"<link\b[^>]*\brel=[\"']?(manifest|apple-touch-icon)\b[^>]*>", "", sayfa)
+    with open(os.path.join(hedef, "index.html"), "w", encoding="utf-8", newline="") as f:
+        f.write(sayfa)
     # 2) Uzantiya ozel dosyalar
     shutil.copyfile(os.path.join(KOK, "chrome", "arkaplan.js"), os.path.join(hedef, "arkaplan.js"))
     shutil.copytree(os.path.join(KOK, "chrome", "_locales"), os.path.join(hedef, "_locales"))
@@ -285,6 +325,8 @@ def chrome_paketle():
             sorunlar.append("index.html icinde satir ici <script> var")
     if re.search(r"\son[a-z]+\s*=", html, flags=re.I):
         sorunlar.append("index.html icinde onclick=... gibi olay ozniteligi var")
+    if re.search(r"\brel=[\"']?(manifest|apple-touch-icon)\b", html):
+        sorunlar.append("index.html PWA manifestine basvuruyor (uzantida dosyasi yok)")
     for js in ("index.js", "kabuk.js", "arkaplan.js"):
         with open(os.path.join(hedef, js), encoding="utf-8") as f:
             icerik = f.read()

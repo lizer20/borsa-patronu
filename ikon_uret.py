@@ -39,17 +39,30 @@ def png_yaz(px, N):
             + chunk(b"IDAT", zlib.compress(ham, 9))
             + chunk(b"IEND", b""))
 
-boyutlar = [16, 24, 32, 48, 64, 128, 256]
-pngler = [png_yaz(ikon_ciz(n), n) for n in boyutlar]
+def maskeli_ikon_ciz(N):
+    """Kurulabilir web uygulamasi (PWA) icin "maskable" simge: isletim sistemi
+    simgeyi daireye/yuvarlak kareye kirpar ve yalnizca ortadaki %80'lik daire
+    guvenlidir. Ayni cizim %70 boyutta, koyu zeminin ortasina konur."""
+    ic = int(N * 0.70)
+    kucuk = ikon_ciz(ic)
+    px = [[(ARKA[0], ARKA[1], ARKA[2], 255) for _ in range(N)] for _ in range(N)]
+    o = (N - ic) // 2
+    for y in range(ic):
+        px[o + y][o:o + ic] = kucuk[y]
+    return px
 
-# ICO kapsayicisi: basslik + her boyut icin dizin girdisi + PNG verileri
-ofs = 6 + 16 * len(boyutlar)
-out = struct.pack("<HHH", 0, 1, len(boyutlar))
-for n, veri in zip(boyutlar, pngler):
-    out += struct.pack("<BBBBHHII", n if n < 256 else 0, n if n < 256 else 0, 0, 0, 1, 32, len(veri), ofs)
-    ofs += len(veri)
-out += b"".join(pngler)
+if __name__ == "__main__":
+    boyutlar = [16, 24, 32, 48, 64, 128, 256]
+    pngler = [png_yaz(ikon_ciz(n), n) for n in boyutlar]
 
-yol = r"C:\Users\Lizer\Desktop\borsa_patronu\borsa_patronu.ico"
-io.open(yol, "wb").write(out)
-print("ikon yazildi:", yol, os.path.getsize(yol), "bayt,", len(boyutlar), "boyut:", boyutlar)
+    # ICO kapsayicisi: basslik + her boyut icin dizin girdisi + PNG verileri
+    ofs = 6 + 16 * len(boyutlar)
+    out = struct.pack("<HHH", 0, 1, len(boyutlar))
+    for n, veri in zip(boyutlar, pngler):
+        out += struct.pack("<BBBBHHII", n if n < 256 else 0, n if n < 256 else 0, 0, 0, 1, 32, len(veri), ofs)
+        ofs += len(veri)
+    out += b"".join(pngler)
+
+    yol = r"C:\Users\Lizer\Desktop\borsa_patronu\borsa_patronu.ico"
+    io.open(yol, "wb").write(out)
+    print("ikon yazildi:", yol, os.path.getsize(yol), "bayt,", len(boyutlar), "boyut:", boyutlar)
