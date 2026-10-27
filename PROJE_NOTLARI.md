@@ -582,6 +582,10 @@ Oyunun canlı adresi: **https://emrebiltekin.me/borsa-patronu/**
 
 ## Yayınlama (Chrome Web Store)
 
+**Mağaza sayfası (yayında, 27 Ekim 2026):** https://chromewebstore.google.com/detail/borsa-patronu/pihnfdifhbbbdiickccdkijpnlddojhj
+(uzantı kimliği `pihnfdifhbbbdiickccdkijpnlddojhj`; güncellemeler aynı öğeye yüklenir,
+yeni öğe AÇILMAZ — açılırsa oyuncuların kaydı eski kimlikte kalır).
+
 Chrome Web Store artık "Chrome uygulaması" kabul etmiyor (2020'den beri kapalı); oyun
 bir **uzantı** olarak yayınlanır: araç çubuğundaki simgeye tıklayınca oyun yeni bir
 sekmede açılır (`chrome/arkaplan.js`). İlk kurulumda da bir kez açılır.
@@ -732,6 +736,8 @@ Dikkat edilecekler:
     gerçek oyundan mağaza görselleri (`build.py magaza`), mağaza metni ve yükleme adımları.
 28. "Bir yerelleştirilmiş bir de genel tanıtım videosu hazırlar mısın" → gerçek oynanıştan
     Türkçe ve İngilizce tanıtım videoları (`build.py video`).
+29. Mağaza formu soruları (tek amaç, uzak kod: Hayır, veri kullanımı: hiçbiri), gizlilik
+    politikası sayfası; uzantı incelemeden geçti ve **yayınlandı** (27 Ekim 2026).
 
 ## Sonraki adımlar için fikirler (istenmedi)
 

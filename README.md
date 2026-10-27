@@ -8,6 +8,7 @@ C++17 + [raylib](https://www.raylib.com/) ile yazıldı; Windows'ta ve tarayıc�
 browser, phones included. Turkish and English. (English summary below.)*
 
 ### ▶ Tarayıcıda oyna / Play in your browser: **https://emrebiltekin.me/borsa-patronu/**
+### ▶ Chrome Web Store: **[Borsa Patronu](https://chromewebstore.google.com/detail/borsa-patronu/pihnfdifhbbbdiickccdkijpnlddojhj)**
 
 ![Borsa Patronu](sayfa_gorselleri/kapak_630x500.png)
 

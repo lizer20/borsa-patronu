@@ -17,8 +17,8 @@
 akıyor, haberler tek tek düşüyor. Hedef basit ama kolay değil — 250.000 TL'ye
 ulaşıp **Efsane Yatırımcı** olmak.
 
-**Tarayıcıda hemen oyna** (telefonda da) ya da Windows sürümünü indir. Türkçe ve
-İngilizce.
+**Tarayıcıda hemen oyna** (telefonda da), Windows sürümünü indir ya da
+[Chrome Web Store'dan](https://chromewebstore.google.com/detail/borsa-patronu/pihnfdifhbbbdiickccdkijpnlddojhj) uzantı olarak ekle. Türkçe ve İngilizce.
 
 ## Haberi okumak için 5 saniyen var
 
@@ -123,8 +123,8 @@ You start with 10,000 TL and a live market: prices move while you watch and news
 drops one item at a time. The goal is simple but not easy — reach 250,000 TL and
 become a **Legendary Investor**.
 
-**Play right now in your browser** (phones too), or download the Windows build.
-English and Turkish.
+**Play right now in your browser** (phones too), download the Windows build, or add
+it from the [Chrome Web Store](https://chromewebstore.google.com/detail/borsa-patronu/pihnfdifhbbbdiickccdkijpnlddojhj). English and Turkish.
 
 ## You have 5 seconds to read the news
 

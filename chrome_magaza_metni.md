@@ -6,6 +6,12 @@
 
 # Chrome Web Store'a yükleme
 
+**Yayında:** https://chromewebstore.google.com/detail/borsa-patronu/pihnfdifhbbbdiickccdkijpnlddojhj
+
+**Güncelleme yüklerken:** panoda bu öğeyi aç → **Paket** → **Yeni paket yükle**. Yeni öğe
+oluşturma: uzantı kimliği değişir, oyuncuların kaydı (uzantının `localStorage`'ı) eski
+kimlikte kalır ve iki ayrı mağaza sayfası olur.
+
 ## Bir kerelik hazırlık (senin yapman gerekenler)
 
 1. **Geliştirici hesabı:** https://chrome.google.com/webstore/devconsole adresine Google
