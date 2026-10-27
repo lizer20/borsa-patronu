@@ -9,6 +9,7 @@ Borsa Patronu - derleme betigi (tek komutla her sey).
     python build.py chrome    Chrome Web Store uzantisi paketini yapar ve denetler
     python build.py magaza    magaza gorsellerini uretir (gercek oyundan ekran goruntuleri)
     python build.py video     tanitim videolari (Turkce + Ingilizce) -> release/video/
+    python build.py shorts    YouTube Shorts (dikey, 3 video x 2 dil) -> release/video/shorts/
     python build.py paket     hepsini yapar, release/ altina zip'leri koyar
     python build.py sun       web surumunu http://localhost:8765 adresinde sunar
     python build.py yayinla   web surumunu derler ve GitHub Pages'e gonderir
@@ -407,6 +408,34 @@ def tanitim_videolari():
             hata("video uretilemedi: " + dil)
 
 
+def shorts_videolari():
+    """YouTube Shorts icin DIKEY videolar (1080x1920, test/shorts_videosu.cpp):
+    release/video/shorts/borsa_patronu_shorts_<tur>_<dil>.mp4; tur haber /
+    devralma / zirve, dil tr / en. ffmpeg (libx264) PATH'te olmali."""
+    env = ortam()
+    ffmpeg = shutil.which("ffmpeg", path=env.get("PATH"))
+    if not ffmpeg:
+        hata("ffmpeg bulunamadi (winget install Gyan.FFmpeg)")
+    print("== YouTube Shorts ==")
+    exe = os.path.join("test", "shorts_videosu.exe")
+    komut = ["g++", os.path.join("test", "shorts_videosu.cpp"), "-o", exe, "-O2", "-Wno-unused-function"] + \
+        ORTAK_BAYRAKLAR + TEST_BAGLAMA
+    s = calistir(komut, env, yakala=True)
+    if s.returncode != 0:
+        print(s.stderr)
+        hata("shorts_videosu derlenemedi")
+    klasor = os.path.join(KOK, "release", "video", "shorts")
+    os.makedirs(klasor, exist_ok=True)
+    for tur in ("haber", "devralma", "zirve"):
+        for dil in ("tr", "en"):
+            cikti = os.path.join(klasor, "borsa_patronu_shorts_%s_%s.mp4" % (tur, dil))
+            s = calistir([os.path.join(KOK, exe), ffmpeg, dil, tur, cikti], env, yakala=True)
+            print(s.stdout.strip())
+            if s.returncode != 0:
+                print(s.stderr)
+                hata("shorts uretilemedi: %s %s" % (tur, dil))
+
+
 def chrome_sun():
     """Paketi, uzantinin guvenlik kuralini (CSP) taklit eden bir sunucuyla acar:
     tarayicida calisiyorsa, magazadan kurulan uzantida da calisir."""
@@ -548,6 +577,8 @@ def main():
         magaza_gorselleri()
     elif hedef == "video":
         tanitim_videolari()
+    elif hedef == "shorts":
+        shorts_videolari()
     elif hedef == "chrome-sun":
         chrome_sun()
     elif hedef == "paket":

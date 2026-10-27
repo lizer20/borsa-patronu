@@ -34,6 +34,7 @@ python build.py web      tarayıcı sürümünü derler (web_cikti/)
 python build.py chrome   Chrome Web Store uzantı paketi (denetimli) → release/
 python build.py magaza   mağaza görselleri (gerçek oyundan ekran görüntüleri)
 python build.py video    tanıtım videoları (TR + EN, 1080p) → release/video/
+python build.py shorts   YouTube Shorts (dikey, 3 video × TR/EN) → release/video/shorts/
 python build.py paket    hepsi + release/ altına zip'ler
 python build.py sun      web sürümünü http://localhost:8765 adresinde sunar
 python build.py yayinla  web sürümünü derleyip GitHub Pages'e gönderir
@@ -651,6 +652,13 @@ sekmede açılır (`chrome/arkaplan.js`). İlk kurulumda da bir kez açılır.
   geçiş çizilir. Ses izi oyunun kendi müziğidir (`MuzikOrnekleri()`). Sabit tohum: iki dil
   birebir aynı oyunu gösterir. ffmpeg (libx264) gerekir; bu makinede winget ile kurulu.
   Üretim sırasında bilgisayardan ses çıkmaz (`sesAcik = false`).
+- **YouTube Shorts** `python build.py shorts` ile üretilir (`release/video/shorts/`, depoya
+  girmez): 3 video × 2 dil, **dikey 1080×1920**, 12–15 sn — `haber` (oku, al, 5 sn geri
+  sayım, kârı al), `devralma` (501. hisse, patronluk, yönetim kumarı), `zirve` (10.000 TL'den
+  Efsane Yatırımcı'ya rütbe rütbe). `test/shorts_videosu.cpp` tanıtım videosuyla aynı
+  yöntemi kullanır ama oyunu **telefon yerleşiminde** (540×960 sahne, 1,5 kat) çizer;
+  üstteki 250 px'lik bant videonun "kancası" olan alt yazıya ayrılmıştır (Shorts'ta alt
+  kısım YouTube'un kendi yazılarına kalır). Menü atlanır: ilk saniyeden aksiyon.
 - **Gizlilik politikası:** `web/gizlilik.html` → https://emrebiltekin.me/borsa-patronu/gizlilik.html
   (mağaza zorunlu tutuyor). Oyun bir gün veri toplamaya başlarsa (analitik, skor sunucusu)
   bu sayfa ve mağazadaki "Veri kullanımı" formu **aynı anda** güncellenmeli.
@@ -765,6 +773,8 @@ Dikkat edilecekler:
 30. "ChromeOS'ta 'Install' düğmesi yok, App Mall'da da yok, oraya nasıl ekleriz" → site
     kurulabilir uygulama (PWA) yapıldı: manifest, kodla üretilen simgeler, internetsiz
     açılış (`web/sw.js`). App Mall için yol Play Store (TWA) — kullanıcıya bırakıldı.
+31. Reddit tanıtımı (r/playmygame ve r/WebGames'e kullanıcı kendisi paylaştı) ve
+    "YouTube için Shorts videoları hazırla" → `build.py shorts`.
 
 ## Sonraki adımlar için fikirler (istenmedi)
 
