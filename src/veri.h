@@ -27,50 +27,54 @@ struct SirketBilgi {
 };
 
 // 6 hisse (RUTBELER ile ayni sayida: her rutbe atlayisinda bir yenisi acilir).
+// Sirketler ve kodlari HAYALIDIR (v2.1 sonrasi; oncesinde gercek BIST sirketleriydi):
+// gercek bir sirketin adiyla uydurma haber ("pilot grevi", "sorusturma") yazmak
+// marka sorunu dogurabilir. Kayit dosyasi sirketleri SIRAYLA tutar, adla degil;
+// ad degistirmek eski kayitlari bozmaz, SIRAYI degistirmek bozar.
 // ACILMA SIRASI baslangic fiyatina gore belirlenir (en ucuz ilk), dizideki sira
 // onemli degildir. Haberin iyi mi kotu mu secilecegi havuzdaki ORANA degil
 // rutbeye bagli bir olasiliga gore belirlenir (bkz. AcemiKorumasi); o yuzden
 // buraya haber eklemek dengeyi degil sadece CESITLILIGI degistirir.
 static const vector<SirketBilgi> SIRKETLER = {
-    {"ASELS", {"Aselsan Savunma San.", "Aselsan Defense Ind."}, {31, 119, 180, 255}, Sektor::SAVUNMA, 45.0f, 0.7f, {
+    {"KALKN", {"Kalkan Savunma", "Kalkan Defense"}, {31, 119, 180, 255}, Sektor::SAVUNMA, 45.0f, 0.7f, {
         {{"İhracat rekoru kırıldı!", "Export record broken!"}, 1.16f},
         {{"Tedarik zinciri sorunları yaşanıyor.", "Supply chain problems reported."}, 0.87f},
         {{"Yeni nesil radar ihalesi kazanıldı.", "Won the next-gen radar tender."}, 1.10f},
         {{"Yurt dışından büyük insansız hava aracı siparişi alındı.", "Landed a major drone order from abroad."}, 1.12f},
         {{"Savunma bütçesinde kesinti gündemde.", "Defense budget cuts are on the table."}, 0.90f},
     }},
-    {"THYAO", {"Türk Hava Yolları", "Turkish Airlines"}, {214, 39, 40, 255}, Sektor::HAVACILIK, 250.0f, 1.3f, {
+    {"TURNA", {"Turna Hava Yolları", "Turna Airways"}, {214, 39, 40, 255}, Sektor::HAVACILIK, 250.0f, 1.3f, {
         {{"Turizm sezonu rekor kırdı.", "Record-breaking tourism season."}, 1.11f},
         {{"Yakıt maliyetleri sert yükseldi.", "Fuel costs have jumped."}, 0.90f},
         {{"Yeni uçuş hatları açıldı.", "New flight routes opened."}, 1.07f},
         {{"Yolcu doluluk oranı rekor seviyede.", "Passenger load factor at a record high."}, 1.09f},
         {{"Pilot grevi uçuşları aksattı.", "A pilot strike disrupted flights."}, 0.88f},
     }},
-    {"GARAN", {"Garanti BBVA", "Garanti BBVA"}, {44, 160, 44, 255}, Sektor::BANKA, 60.0f, 1.05f, {
+    {"LALEB", {"Lale Bankası", "Lale Bank"}, {44, 160, 44, 255}, Sektor::BANKA, 60.0f, 1.05f, {
         {{"Kâr beklentisi aşıldı.", "Profit beat expectations."}, 1.09f},
         {{"Kredi faizleri yükseldi.", "Loan rates have gone up."}, 0.92f},
         {{"Kredi notu yükseltildi.", "Credit rating upgraded."}, 1.06f},
         {{"Takipteki kredi oranı geriledi.", "Non-performing loan ratio declined."}, 1.08f},
         {{"Yeni bankacılık düzenlemesi kâr marjını daralttı.", "New banking regulation squeezed margins."}, 0.91f},
     }},
-    {"EREGL", {"Ereğli Demir Çelik", "Eregli Iron & Steel"}, {255, 127, 14, 255}, Sektor::SANAYI, 38.0f, 1.2f, {
+    {"DMDAG", {"Demirdağ Çelik", "Demirdag Steel"}, {255, 127, 14, 255}, Sektor::SANAYI, 38.0f, 1.2f, {
         {{"Çelik ihracatı rekor kırdı!", "Steel exports hit a record!"}, 1.14f},
         {{"Demir cevheri fiyatları yükseldi, maliyetler arttı.", "Iron ore prices rose; costs are up."}, 0.89f},
         {{"Yeni yüksek fırın yatırımı devreye girdi.", "A new blast furnace came online."}, 1.09f},
         {{"Otomotiv sektöründen dev çelik siparişi.", "Huge steel order from the auto sector."}, 1.11f},
         {{"Küresel çelik fiyatları geriledi.", "Global steel prices fell."}, 0.90f},
     }},
-    {"KCHOL", {"Koç Holding", "Koc Holding"}, {23, 190, 207, 255}, Sektor::HOLDING, 145.0f, 1.0f, {
+    {"CINAR", {"Çınar Holding", "Cinar Holding"}, {23, 190, 207, 255}, Sektor::HOLDING, 145.0f, 1.0f, {
         {{"Otomotiv ve enerji kollarında güçlü çeyrek sonuçları.", "Strong quarter in automotive and energy."}, 1.11f},
         {{"Kur riski holding bilançosunu baskıladı.", "Currency risk weighed on the balance sheet."}, 0.91f},
         {{"Yeni bir yurt dışı şirket alımı açıklandı.", "Announced a new overseas acquisition."}, 1.08f},
         {{"Beyaz eşya kolu ihracat rekoru kırdı.", "Home appliance arm set an export record."}, 1.09f},
         {{"Otomotiv satışları beklentinin altında kaldı.", "Auto sales fell short of expectations."}, 0.90f},
     }},
-    {"BIMAS", {"BİM Mağazalar", "BIM Stores"}, {148, 103, 189, 255}, Sektor::PERAKENDE, 430.0f, 0.55f, {
+    {"SEPET", {"Sepet Marketler", "Sepet Markets"}, {148, 103, 189, 255}, Sektor::PERAKENDE, 430.0f, 0.55f, {
         {{"Mağaza sayısı hızla artıyor, ciro rekor kırdı.", "Store count is growing fast; record revenue."}, 1.10f},
         {{"Enflasyon tüketici harcamalarını baskılıyor.", "Inflation is squeezing consumer spending."}, 0.92f},
-        {{"Yeni 'BİM Online' girişimi ilgi gördü.", "The new 'BIM Online' venture drew interest."}, 1.07f},
+        {{"Yeni 'Sepet Online' girişimi ilgi gördü.", "The new 'Sepet Online' venture drew interest."}, 1.07f},
         {{"Özel markalı ürün satışları patladı.", "Private-label sales are booming."}, 1.09f},
         {{"Rekabet Kurumu soruşturma başlattı.", "The competition authority opened a probe."}, 0.89f},
     }},
@@ -116,7 +120,7 @@ struct YonetimSecenek {
     IkiDil etiket;           // buton uzerinde gorunen kisa metin
     float temelDegerCarpani; // fiyata VE adil degere uygulanan aninda etki
     float riskPrimiDegisimi; // hissenin KALICI oynaklik tabanina eklenen/cikan miktar
-    IkiDil logMetni;         // haber bandina yazilacak sonuc ("ASELS YONETIM KARARI: " + bu)
+    IkiDil logMetni;         // haber bandina yazilacak sonuc ("KALKN YONETIM KARARI: " + bu)
     IkiDil basarisizMetni;   // (yalnizca riskli secenek) kumar TUTMAZSA haber bandina yazilan
 };
 

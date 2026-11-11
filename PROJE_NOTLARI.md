@@ -6,8 +6,8 @@ asistanı) önce bunu okumalı.
 
 ## Ne bu proje
 
-C++17 + raylib ile yazılmış bir borsa yönetim oyunu. Oyuncu 6 hisseyi (ASELS, THYAO,
-GARAN, EREGL, KCHOL, BIMAS — gerçek BIST kodları, fiyatlar tamamen simüle) ve iki
+C++17 + raylib ile yazılmış bir borsa yönetim oyunu. Oyuncu 6 hisseyi (KALKN, TURNA,
+LALEB, DMDAG, CINAR, SEPET — hayali şirketler, fiyatlar tamamen simüle) ve iki
 güvenli limanı (altın, dolar) alıp satar; haberler, küresel olaylar ve bilançolar
 fiyatları oynatır; rütbe atladıkça yeni hisseler ve araçlar (emirler, açığa satış,
 güvenli limanlar, kredi) açılır; bir şirketin %50+1'ini toplayan patronu olur ve
@@ -222,7 +222,7 @@ Her saniye, her hisse için:
 - **Neden eklendi:** v1.x'te iki hissenin 30 saniyelik getirileri arasındaki
   korelasyon **0,98** idi (hepsi aynı çizgiyi çiziyordu, çeşitlendirme anlamsızdı).
   Şimdi 1 sn'de 0,39, 30 sn'de **0,54** (gerçek borsalarda ~0,3–0,5). Hisselerin
-  tek tek oynaklığı (tik başı %0,35 BIMAS … %0,63 THYAO) ve adil değerden tipik
+  tek tek oynaklığı (tik başı %0,35 SEPET … %0,63 TURNA) ve adil değerden tipik
   sapması (%6–13) **eskisiyle aynı** tutuldu.
 - `RastgeleGauss()`'un std sapması 1 değil **0,289**'dur; `volatilite = 0,008`
   gerçekte tik başı ~%0,23 demektir. |x| ≤ 1 (kuyruklar kesik, tek tikte fiyat uçamaz).
@@ -818,6 +818,13 @@ Dikkat edilecekler:
 32. "Oyunu CrazyGames'e göre hazırlar mısın" → SDK v3 köprüsü (gameplay, happytime, ses,
     Data modülüyle kayıt), dış bağlantısız paket (`build.py crazygames`), kurallara uygun
     kapaklar ve sessiz önizleme videoları (`build.py crazygames-medya`), gönderim metni.
+33. "Şirket adlarını hayali yap" (gerçek şirket adıyla uydurma haberler marka sorunu
+    doğurabilirdi; CrazyGames'in elle incelemesi öncesi) → KALKN Kalkan Savunma, TURNA Turna
+    Hava Yolları, LALEB Lale Bankası, DMDAG Demirdağ Çelik, CINAR Çınar Holding, SEPET Sepet
+    Marketler. Sıra, fiyat ve beta aynı: denge ve eski kayıtlar değişmedi. Bütün görseller ve
+    videolar yeniden üretildi. **Hâlâ eski adları gösterenler:** Chrome Web Store'daki paket ve
+    ekran görüntüleri (yeni sürümle güncellenmeli), itch.io'daki paket/görseller, YouTube'a
+    önceden yüklenmiş videolar.
 
 ## Sonraki adımlar için fikirler (istenmedi)
 

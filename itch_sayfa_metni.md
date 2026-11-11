@@ -111,7 +111,7 @@ Windows sürümü kod imzalama sertifikasıyla imzalı olmadığı için SmartSc
 programlarında normaldir: **"Daha fazla bilgi" → "Yine de çalıştır"**.
 Tarayıcı sürümünde böyle bir uyarı yoktur.
 
-Şirket kodları gerçek BIST kodlarından esinlenmiştir, ancak **tüm fiyat
+Şirketler ve kodları hayalidir; **tüm fiyat
 hareketleri, haberler ve olaylar tamamen kurgusaldır ve rastgele üretilir.**
 Bu bir oyundur: yatırım tavsiyesi değildir ve gerçek piyasa verisi içermez.
 
@@ -220,6 +220,6 @@ The Windows build is not code-signed, so SmartScreen may show an "Unknown
 publisher" warning. That is normal for unsigned indie software: **"More info" →
 "Run anyway"**. The browser version shows no such warning.
 
-Company tickers are inspired by real BIST tickers, but **all price moves, news and
+All companies and tickers are fictional; **all price moves, news and
 events are entirely fictional and randomly generated.** This is a game: it is not
 investment advice and contains no real market data.

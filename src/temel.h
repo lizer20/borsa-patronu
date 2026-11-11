@@ -71,7 +71,7 @@ static const float GUN_SURESI_SN = 18.0f;        // bir "oyun gunu" kac saniye s
 //
 // OLCULEN YENI DEGERLER (test/denge_testi.cpp, bolum 2):
 //   korelasyon: 1 sn ~0,40, 30 sn ~0,53      (eskiden 0,72 / 0,98)
-//   tik basi std: BIMAS %0,35 ... THYAO %0,60 (eskisiyle AYNI tutuldu)
+//   tik basi std: SEPET %0,35 ... TURNA %0,60 (eskisiyle AYNI tutuldu)
 //   adil degerden tipik sapma: %6 ... %13     (eskisiyle ayni)
 // Yani hisselerin tek tek ne kadar oynak oldugu DEGISMEDI; degisen sey artik
 // birbirlerinden ayrisabilmeleri. "Hangisini alayim" sorusunun bir anlami var,
@@ -80,8 +80,8 @@ static const float MARKET_KALICILIK = 0.965f;     // yari omur ~19,5 sn
 static const float MARKET_SOK_BUYUKLUK = 0.0045f; // piyasa faktoru std ~%0,50
 static const float OZEL_KALICILIK = 0.965f;
 static const float OZEL_SOK_BUYUKLUK = 0.0040f;
-// Ozel faktorun buyuklugu betayla birlikte artar (savunmaci BIMAS kendi basina
-// da sakin, oynak THYAO kendi basina da oynak): olcek = TABAN + EGIM*beta.
+// Ozel faktorun buyuklugu betayla birlikte artar (savunmaci SEPET kendi basina
+// da sakin, oynak TURNA kendi basina da oynak): olcek = TABAN + EGIM*beta.
 static const float OZEL_OLCEK_TABAN = 0.25f;
 static const float OZEL_OLCEK_EGIM = 0.75f;
 // PIYASA MODU gostergesinin "risk-on / risk-off" esigi (piyasa faktorunun ~0,6 sigmasi).

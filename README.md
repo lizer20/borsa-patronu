@@ -25,7 +25,7 @@ browser, phones included. Turkish and English. (English summary below.)*
   bilanço takvimi, küresel olaylar, kaydet/yükle.
 - Pencereye uyar: geniş ekranda yanlarda boşluk kalmaz, telefonda dikey yerleşime geçer.
 
-Şirket kodları gerçek BIST kodlarından esinlenmiştir; **fiyatlar, haberler ve olaylar
+**Şirketler, fiyatlar, haberler ve olaylar
 tamamen kurgusaldır.** Yatırım tavsiyesi değildir.
 
 ## Derleme
@@ -75,7 +75,7 @@ stake, read the news, and build an empire.
   achievements, an earnings calendar, global events, save/load.
 - Fits the window: no side bars on wide screens, a portrait layout on phones.
 
-Tickers are inspired by real BIST tickers; **all prices, news and events are entirely
+**All companies, prices, news and events are entirely
 fictional.** Not investment advice.
 
 ### Building

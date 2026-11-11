@@ -110,7 +110,7 @@ durur. İyi mi kötü mü olduğu söylenmez — okuyup karar vermek sana kalmı
 • 5 senaryo, 18 başarım, Türkçe ve İngilizce, renk körü modu
 • Çevrimdışı oynanır; kayıt yalnızca kendi tarayıcında durur, hiçbir veri toplanmaz
 
-Şirket kodları gerçek BIST kodlarından esinlenmiştir; fiyatlar, haberler ve olaylar
+Şirketler, fiyatlar, haberler ve olaylar
 tamamen kurgusaldır. Bu bir oyundur, yatırım tavsiyesi değildir.
 
 ## Store description — English
@@ -133,5 +133,5 @@ read it and decide.
 • 5 scenarios, 18 achievements, English and Turkish, colorblind mode
 • Plays offline; your save stays in your own browser and no data is collected
 
-Tickers are inspired by real BIST tickers; prices, news and events are entirely
+Companies, prices, news and events are entirely
 fictional. This is a game, not investment advice.
