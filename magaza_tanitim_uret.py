@@ -9,7 +9,7 @@
 Stil kapak_uret.py ile ayni (koyu zemin, yukselen altin cizgi). Ekran goruntuleri
 ise gercek oyundan gelir: test/magaza_gorselleri.cpp (python build.py magaza).
 """
-import io, os, random
+import io, os, random, sys
 from PIL import Image, ImageDraw, ImageFont
 
 ARKA_UST = (14, 17, 23); ARKA_ALT = (8, 10, 14)
@@ -18,7 +18,7 @@ F = r"C:\Windows\Fonts" + chr(92)
 CIKTI = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sayfa_gorselleri", "chrome")
 
 
-def kutucuk(W, H, alt_yazi, dosya, klasor):
+def kutucuk(W, H, alt_yazi, dosya, klasor, kok=CIKTI):
     img = Image.new("RGB", (W, H), ARKA_UST)
     d = ImageDraw.Draw(img)
     for y in range(H):
@@ -79,12 +79,27 @@ def kutucuk(W, H, alt_yazi, dosya, klasor):
         d.text((x, y), metin, font=font, fill=renk)
 
     g = max(2, int(H / 120))
-    ortala("BORSA PATRONU", baslik, int(H * 0.13), ALTIN, g)
-    cy = int(H * 0.36)
-    d.line([(W // 2 - int(W * 0.2), cy), (W // 2 + int(W * 0.2), cy)], fill=ALTIN, width=max(1, g // 2))
-    ortala(alt_yazi, alt, int(H * 0.40), (230, 233, 238), 0)
+    if alt_yazi:
+        ortala("BORSA PATRONU", baslik, int(H * 0.13), ALTIN, g)
+        cy = int(H * 0.36)
+        d.line([(W // 2 - int(W * 0.2), cy), (W // 2 + int(W * 0.2), cy)], fill=ALTIN, width=max(1, g // 2))
+        ortala(alt_yazi, alt, int(H * 0.40), (230, 233, 238), 0)
+    elif W > H * 1.2:
+        # Yalnizca baslik (CrazyGames kapagi: baska yazi yasak)
+        ortala("BORSA PATRONU", baslik, int(H * 0.22), ALTIN, g)
+    else:
+        # Dikey/kare kapak: tek satirda kucuk kaliyordu; iki satir, iri
+        boy = int(W * 0.3)
+        while True:
+            iri = ImageFont.truetype(F + "ariblk.ttf", boy)
+            x0, _, x1, _ = d.textbbox((0, 0), "PATRONU", font=iri)
+            if x1 - x0 <= W * 0.86 or boy <= 10: break
+            boy -= 1
+        y = int(H * 0.10)
+        ortala("BORSA", iri, y, ALTIN, g)
+        ortala("PATRONU", iri, y + int(boy * 1.12), ALTIN, g)
 
-    hedef = os.path.join(CIKTI, klasor)
+    hedef = os.path.join(kok, klasor)
     os.makedirs(hedef, exist_ok=True)
     yol = os.path.join(hedef, dosya)
     img.save(yol, "PNG", optimize=True)
@@ -117,6 +132,14 @@ def magaza_simgesi():
     simge.save(yol, "PNG", optimize=True)
     print("simge:", os.path.basename(yol), simge.size, os.path.getsize(yol), "bayt")
 
+
+if len(sys.argv) > 1 and sys.argv[1] == "crazygames":
+    # CrazyGames kapaklari: zorunlu uc boyut; kenarlik, "Oyna/Yeni" yazisi ve simge YOK,
+    # yalnizca oyunun adi. Tanitim videosu ilk karesinde yatay kapakla acilir.
+    kok = os.path.join(os.path.dirname(CIKTI), "crazygames")
+    for W, H in ((1920, 1080), (800, 1200), (800, 800)):
+        kutucuk(W, H, "", "kapak_%dx%d.png" % (W, H), "", kok)
+    sys.exit(0)
 
 magaza_simgesi()
 # tr/: yerellestirilmis (Turkce sayfa)   genel/: Ingilizce (diger butun diller)

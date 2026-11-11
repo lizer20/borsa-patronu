@@ -10,6 +10,8 @@ Borsa Patronu - derleme betigi (tek komutla her sey).
     python build.py magaza    magaza gorsellerini uretir (gercek oyundan ekran goruntuleri)
     python build.py video     tanitim videolari (Turkce + Ingilizce) -> release/video/
     python build.py shorts    YouTube Shorts (dikey, 3 video x 2 dil) -> release/video/shorts/
+    python build.py crazygames  CrazyGames HTML5 paketi (SDK'li, denetimli) -> release/
+    python build.py crazygames-medya  CrazyGames kapaklari + onizleme videolari
     python build.py paket     hepsini yapar, release/ altina zip'leri koyar
     python build.py sun       web surumunu http://localhost:8765 adresinde sunar
     python build.py yayinla   web surumunu derler ve GitHub Pages'e gonderir
@@ -358,6 +360,85 @@ def chrome_paketle():
     return hedef
 
 
+CRAZYGAMES_SDK = "https://sdk.crazygames.com/crazygames-sdk-v3.js"
+
+
+def crazygames_paketle():
+    """CrazyGames'e yuklenecek HTML5 paketini hazirlar ve DENETLER.
+
+    Oyun ayni web derlemesidir (.wasm her yerde ayni); farki sayfadadir:
+    CrazyGames SDK'si ve kopru betigi (web/crazygames.js) eklenir, oyun SDK
+    baslatildiktan SONRA yuklenir. Portal kurali geregi pakette baska bir siteye
+    giden hicbir baglanti, PWA dosyasi ve paylasim (og:) etiketi bulunmaz.
+    Ayrintilar: crazygames_metni.md ve PROJE_NOTLARI.md (CrazyGames).
+    """
+    web = web_derle()
+    s = surum()
+    print("== CrazyGames paketi (%s) ==" % s)
+    hedef = os.path.join(KOK, "build", "crazygames")
+    shutil.rmtree(hedef, ignore_errors=True)
+    os.makedirs(hedef)
+    for ad in os.listdir(web):
+        if ad not in ("kapak.png", "gizlilik.html") + PWA_DOSYALARI:
+            shutil.copyfile(os.path.join(web, ad), os.path.join(hedef, ad))
+    shutil.copyfile(os.path.join(KOK, "web", "crazygames.js"), os.path.join(hedef, "crazygames.js"))
+
+    with open(os.path.join(hedef, "index.html"), encoding="utf-8") as f:
+        sayfa = f.read()
+    # emscripten sayfayi kucultur (tirnaksiz oznitelik, tek satir): genis eslestir
+    sayfa = re.sub(r"<link\b[^>]*\brel=[\"']?(manifest|apple-touch-icon)\b[^>]*>", "", sayfa)
+    sayfa = re.sub(r"<meta\b[^>]*\bproperty=[\"']?og:[^>]*>", "", sayfa)
+    oyun_betigi = re.search(r"<script\b[^>]*\bsrc=[\"']?index\.js[\"']?[^>]*>\s*</script>", sayfa)
+    if not oyun_betigi:
+        hata("index.html icinde index.js betigi bulunamadi")
+    # index.js'i crazygames.js yukler (SDK hazir olunca)
+    sayfa = sayfa.replace(oyun_betigi.group(0),
+                          '<script src="%s"></script><script src="crazygames.js"></script>' % CRAZYGAMES_SDK)
+    with open(os.path.join(hedef, "index.html"), "w", encoding="utf-8", newline="") as f:
+        f.write(sayfa)
+
+    # ---- DENETIMLER ----
+    sorunlar = []
+    dosyalar = []
+    for kok, _, adlar in os.walk(hedef):
+        dosyalar += [os.path.join(kok, a) for a in adlar]
+    toplam = sum(os.path.getsize(d) for d in dosyalar)
+    if len(dosyalar) > 1500:
+        sorunlar.append("dosya sayisi %d > 1500" % len(dosyalar))
+    if toplam > 20 * 1000 * 1000:  # sinir 50 MB; mobil ana sayfa icin 20 MB
+        sorunlar.append("toplam boyut %.1f MB > 20 MB" % (toplam / 1e6))
+    for d in dosyalar:
+        if d.endswith((".html", ".js")):
+            with open(d, encoding="utf-8") as f:
+                icerik = f.read()
+            if d.endswith("index.js"):
+                continue  # emscripten'in kendi kodu
+            for adres in re.findall(r"https?://[^\s\"'<>)]+", re.sub(r"<!--.*?-->|//[^\n]*", "", icerik, flags=re.S)):
+                if adres != CRAZYGAMES_SDK:
+                    sorunlar.append("%s disari baglanti iceriyor: %s" % (os.path.basename(d), adres))
+    if "manifest" in sayfa or "og:" in sayfa:
+        sorunlar.append("index.html'de PWA/og etiketi kaldi")
+    if sayfa.count(CRAZYGAMES_SDK) != 1 or "crazygames.js" not in sayfa:
+        sorunlar.append("SDK ya da kopru betigi sayfada yok")
+    if sorunlar:
+        for x in sorunlar:
+            print("  SORUN: " + x)
+        hata("CrazyGames paketi denetimden gecemedi")
+
+    os.makedirs(os.path.join(KOK, "release"), exist_ok=True)
+    zyol = os.path.join(KOK, "release", "BorsaPatronu-%s-crazygames.zip" % s)
+    with zipfile.ZipFile(zyol, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+        for d in sorted(dosyalar):
+            z.write(d, os.path.relpath(d, hedef).replace(os.sep, "/"))
+    with zipfile.ZipFile(zyol) as z:
+        adlar = z.namelist()
+    if "index.html" not in adlar or any(a.endswith(".sav") for a in adlar):
+        hata("crazygames paketi beklenmeyen icerik: %s" % adlar)
+    print("  denetim temiz: dis baglanti yok (yalnizca SDK), PWA/og yok, %d dosya, %.1f MB" % (len(adlar), toplam / 1e6))
+    print("  %s (%.1f MB)" % (os.path.relpath(zyol, KOK), os.path.getsize(zyol) / 1e6))
+    return hedef
+
+
 def magaza_gorselleri():
     """sayfa_gorselleri/chrome/ altina magaza gorsellerini uretir: gercek oyundan
     1280x800 ekran goruntuleri (test/magaza_gorselleri.cpp) + tanitim kutucuklari."""
@@ -408,15 +489,12 @@ def tanitim_videolari():
             hata("video uretilemedi: " + dil)
 
 
-def shorts_videolari():
-    """YouTube Shorts icin DIKEY videolar (1080x1920, test/shorts_videosu.cpp):
-    release/video/shorts/borsa_patronu_shorts_<tur>_<dil>.mp4; tur haber /
-    devralma / zirve, dil tr / en. ffmpeg (libx264) PATH'te olmali."""
+def video_uretici():
+    """test/shorts_videosu.cpp'yi derler; (ortam, ffmpeg, exe yolu) doner."""
     env = ortam()
     ffmpeg = shutil.which("ffmpeg", path=env.get("PATH"))
     if not ffmpeg:
         hata("ffmpeg bulunamadi (winget install Gyan.FFmpeg)")
-    print("== YouTube Shorts ==")
     exe = os.path.join("test", "shorts_videosu.exe")
     komut = ["g++", os.path.join("test", "shorts_videosu.cpp"), "-o", exe, "-O2", "-Wno-unused-function"] + \
         ORTAK_BAYRAKLAR + TEST_BAGLAMA
@@ -424,16 +502,48 @@ def shorts_videolari():
     if s.returncode != 0:
         print(s.stderr)
         hata("shorts_videosu derlenemedi")
+    return env, ffmpeg, os.path.join(KOK, exe)
+
+
+def shorts_videolari():
+    """YouTube Shorts icin DIKEY videolar (1080x1920, test/shorts_videosu.cpp):
+    release/video/shorts/borsa_patronu_shorts_<tur>_<dil>.mp4; tur haber /
+    devralma / zirve, dil tr / en. ffmpeg (libx264) PATH'te olmali."""
+    print("== YouTube Shorts ==")
+    env, ffmpeg, exe = video_uretici()
     klasor = os.path.join(KOK, "release", "video", "shorts")
     os.makedirs(klasor, exist_ok=True)
     for tur in ("haber", "devralma", "zirve"):
         for dil in ("tr", "en"):
             cikti = os.path.join(klasor, "borsa_patronu_shorts_%s_%s.mp4" % (tur, dil))
-            s = calistir([os.path.join(KOK, exe), ffmpeg, dil, tur, cikti], env, yakala=True)
+            s = calistir([exe, ffmpeg, dil, tur, cikti], env, yakala=True)
             print(s.stdout.strip())
             if s.returncode != 0:
                 print(s.stderr)
                 hata("shorts uretilemedi: %s %s" % (tur, dil))
+
+
+def crazygames_medya():
+    """CrazyGames gonderimi icin gorseller: uc kapak (sayfa_gorselleri/crazygames/,
+    kodla cizilir) ve iki onizleme videosu (release/video/crazygames/: yatay
+    1920x1080 ve dikey 2:3 1080x1620; 18 sn, sessiz, ilk karesi kapak)."""
+    print("== CrazyGames kapaklari ve onizleme videolari ==")
+    s = calistir([sys.executable, os.path.join(KOK, "magaza_tanitim_uret.py"), "crazygames"], ortam(), yakala=True)
+    print(s.stdout.strip())
+    if s.returncode != 0:
+        print(s.stderr)
+        hata("kapaklar uretilemedi")
+    env, ffmpeg, exe = video_uretici()
+    gorsel = os.path.join(KOK, "sayfa_gorselleri", "crazygames")
+    klasor = os.path.join(KOK, "release", "video", "crazygames")
+    os.makedirs(klasor, exist_ok=True)
+    for tur, kapak in (("onizleme-yatay", "kapak_1920x1080.png"), ("onizleme-dikey", "kapak_800x1200.png")):
+        cikti = os.path.join(klasor, "borsa_patronu_%s.mp4" % tur.replace("-", "_"))
+        s = calistir([exe, ffmpeg, "en", tur, cikti, os.path.join(gorsel, kapak)], env, yakala=True)
+        print(s.stdout.strip())
+        if s.returncode != 0:
+            print(s.stderr)
+            hata("onizleme uretilemedi: " + tur)
 
 
 def chrome_sun():
@@ -543,15 +653,15 @@ def yayinla():
         print("  adres: https://%s.github.io/%s/   (yayin 1-2 dakika surebilir)" % (m.group(1).lower(), m.group(2)))
 
 
-def sun():
+def sun(dizin=None, port=8765, komut="web"):
     import functools
     import http.server
-    dizin = os.path.join(KOK, "web_cikti")
+    dizin = dizin or os.path.join(KOK, "web_cikti")
     if not os.path.exists(os.path.join(dizin, "index.html")):
-        hata("once 'python build.py web' calistir")
+        hata("once 'python build.py %s' calistir" % komut)
     isleyici = functools.partial(http.server.SimpleHTTPRequestHandler, directory=dizin)
-    print("web surumu: http://localhost:8765  (durdurmak icin Ctrl+C)")
-    http.server.ThreadingHTTPServer(("127.0.0.1", 8765), isleyici).serve_forever()
+    print("%s: http://localhost:%d  (durdurmak icin Ctrl+C)" % (dizin, port))
+    http.server.ThreadingHTTPServer(("127.0.0.1", port), isleyici).serve_forever()
 
 
 def main():
@@ -579,6 +689,13 @@ def main():
         tanitim_videolari()
     elif hedef == "shorts":
         shorts_videolari()
+    elif hedef == "crazygames":
+        crazygames_paketle()
+    elif hedef == "crazygames-medya":
+        crazygames_medya()
+    elif hedef == "crazygames-sun":
+        # localhost'ta SDK "local" ortamda calisir: reklam yerine yazi, konsola gunluk
+        sun(os.path.join(KOK, "build", "crazygames"), 8767, "crazygames")
     elif hedef == "chrome-sun":
         chrome_sun()
     elif hedef == "paket":

@@ -182,19 +182,23 @@ struct SesEfektleri {
 };
 
 static bool sesAcik = true;
+// Oyun portali (CrazyGames) sesi kapattiysa: oyuncunun kendi ses ayarindan once
+// gelir, ama o ayari degistirmez (portal sesi acinca eski hale doner).
+static bool g_portalSessiz = false;
+static bool SesDuyulur() { return sesAcik && !g_portalSessiz; }
 // Cal() icinde "yuklendi" bayragini kontrol edebilmek icin. Pencere/ses cihazi
 // olmadan calisan testlerde (denge testi) bu isaretci bos kalir ve Cal() hicbir
 // sey yapmaz - simulasyon bu sayede tamamen "basiz" (headless) calisabilir.
 static SesEfektleri* g_sesler = nullptr;
 static void Cal(Sound& s) {
-    if (sesAcik && g_sesler && g_sesler->yuklendi) PlaySound(s);
+    if (SesDuyulur() && g_sesler && g_sesler->yuklendi) PlaySound(s);
 }
 
 // Her karede: muzik calmali mi? Bitince bastan baslatir (dongu), kapatilinca
 // durdurur. Ses kapaliyken (M tusu / Ses: Kapali) muzik de susar.
 static void MuzikGuncelle(bool istenen) {
     if (!g_sesler || !g_sesler->yuklendi) return;
-    const bool calmali = istenen && sesAcik;
+    const bool calmali = istenen && SesDuyulur();
     const bool caliyor = IsSoundPlaying(g_sesler->muzik);
     if (calmali && !caliyor) PlaySound(g_sesler->muzik);
     else if (!calmali && caliyor) StopSound(g_sesler->muzik);

@@ -14,8 +14,8 @@ güvenli limanlar, kredi) açılır; bir şirketin %50+1'ini toplayan patronu ol
 yönetim kararları verir. Aradaki boşluğu kısa görevler doldurur.
 
 - **İki dil:** Türkçe ve İngilizce (ilk açılışta sistem diline göre, menüden değişir).
-- **Üç dağıtım:** Windows `.exe`, tarayıcı (WebAssembly; GitHub Pages ve itch.io) ve
-  **Chrome uzantısı** (Chrome Web Store) — hepsi aynı kaynaktan. Tarayıcı sürümü
+- **Dağıtımlar:** Windows `.exe`, tarayıcı (WebAssembly; GitHub Pages, itch.io ve
+  CrazyGames paketi) ve **Chrome uzantısı** (Chrome Web Store) — hepsi aynı kaynaktan. Tarayıcı sürümü
   telefonda da oynanır (dikey yerleşim).
 - **Her pencereye uyar:** sahne pencerenin en-boy oranına göre boyutlanır; yanlarda
   siyah boşluk kalmaz (bkz. Arayüz kuralları).
@@ -35,6 +35,8 @@ python build.py chrome   Chrome Web Store uzantı paketi (denetimli) → release
 python build.py magaza   mağaza görselleri (gerçek oyundan ekran görüntüleri)
 python build.py video    tanıtım videoları (TR + EN, 1080p) → release/video/
 python build.py shorts   YouTube Shorts (dikey, 3 video × TR/EN) → release/video/shorts/
+python build.py crazygames        CrazyGames HTML5 paketi (SDK'li, denetimli) → release/
+python build.py crazygames-medya  CrazyGames kapakları + önizleme videoları
 python build.py paket    hepsi + release/ altına zip'ler
 python build.py sun      web sürümünü http://localhost:8765 adresinde sunar
 python build.py yayinla  web sürümünü derleyip GitHub Pages'e gönderir
@@ -78,6 +80,8 @@ ayrılmış durumda.
 | `web/kabuk.html`, `web/kabuk.js` | Web sürümünün sayfa kabuğu ve yardımcı betiği (satır içi betik YOK — bkz. Chrome) |
 | `web/site.webmanifest`, `web/sw.js` | Kurulabilir uygulama (PWA): manifest ve internetsiz açılış için service worker |
 | `chrome/` | Chrome uzantısının kendi dosyaları: `manifest.json`, `arkaplan.js`, `_locales/` |
+| `web/crazygames.js`, `crazygames_metni.md` | CrazyGames köprüsü (SDK ↔ oyun) ve gönderim metni/adımları |
+| `test/shorts_videosu.cpp` | Dikey videolar: YouTube Shorts ve CrazyGames önizlemeleri (gerçek oynanış) |
 | `test/magaza_gorselleri.cpp`, `magaza_tanitim_uret.py` | Mağaza görselleri: gerçek oyundan ekran görüntüleri + tanıtım kutucukları |
 | `chrome_magaza_metni.md` | Chrome Web Store sayfa metni, gizlilik cevapları ve yükleme adımları |
 | `build.py`, `build.bat` | Derleme betiği |
@@ -666,6 +670,42 @@ sekmede açılır (`chrome/arkaplan.js`). İlk kurulumda da bir kez açılır.
   `chrome_magaza_metni.md`. Geliştirici hesabı (tek seferlik 5 $) ve yükleme
   **kullanıcının kendi hesabıyla** yapılır.
 
+## Yayınlama (CrazyGames)
+
+`python build.py crazygames` → `release/BorsaPatronu-vX.Y-crazygames.zip` (HTML5 paketi);
+`python build.py crazygames-medya` → 3 kapak (`sayfa_gorselleri/crazygames/`) ve 2 önizleme
+videosu (`release/video/crazygames/`). Form metni ve adımlar: `crazygames_metni.md`.
+Gönderim kullanıcının kendi geliştirici hesabıyla yapılır.
+
+- **Oyun aynı:** `index.wasm` web sitesindekiyle aynı dosya. Fark sayfada: CrazyGames SDK v3
+  ve köprü betiği `web/crazygames.js` eklenir, oyun (`index.js`) SDK başlatıldıktan **sonra**
+  yüklenir (oyun açılırken kaydı okur; depo hazır olmalı). SDK yoksa/cevap vermezse 6 sn
+  sonra oyun yine açılır.
+- **Köprü (`src/platform.h`, "OYUN PORTALI KÖPRÜSÜ"):** sayfa `Module.platform` kurarsa oyun
+  her karede durumunu bildirir (`PlatformBildir`): oynuyor/oynamıyor (gameplayStart/Stop:
+  menü, duraklatma, ayarlar, oyun sonu, çıkış onayı "oynamıyor"; emir/kredi/yönetim penceresi
+  oyunun parçası), rütbe atlayışında `happytime`. Portal sesi kapatırsa `g_portalSessiz`
+  (`ses.h`) oyuncunun ses ayarından önce gelir ama onu değiştirmez. Dil SDK'nin bildirdiği
+  yerel ayardan seçilir. `Module.platform` olmayan her yerde (site, itch, uzantı) bunların
+  hiçbiri bir şey yapmaz.
+- **Kayıt:** `Module.depolama` = SDK Data modülü (localStorage arayüzüyle aynı; oyuncu
+  girişliyse hesaba eşitlenir, sınır 1 MB — oyun kaydı ~6 KB). Modül kapalıysa
+  (gönderimde "Progress Save" seçilmemişse) localStorage'a düşer.
+- **Portal kuralları:** oyunun kendi sitesine bile bağlantı verilmez (`PortalIcinde()`:
+  "Skoru Kopyala" metni adres eklemez); pakette og: etiketi, PWA dosyaları, gizlilik sayfası
+  yok; oyun içi tam ekran düğmesi yasak (zaten yok). `build.py crazygames` dış adresleri,
+  dosya sayısını (≤ 1500) ve boyutu (≤ 20 MB, mobil ana sayfa sınırı) denetler.
+- **Önizleme videoları** (`test/shorts_videosu.cpp`, `onizleme-yatay|dikey`): kuralları
+  Shorts'tan farklı — 15–20 sn, **ses yok**, hızlandırma ve siyah geçiş yok, ilk kare kapakla
+  aynı, işletim sistemi imleci gibi görünen ok yok. Bu yüzden hazırlık ekran dışında yapılır;
+  video kapakla açılır, 0,5 sn'de oyuna geçer ve sonrası kesintisiz gerçek zamanlıdır.
+- **Reklam yok** (Basic Launch reklamsızdır). Full Launch'ta eklenecekse kurallar
+  `crazygames_metni.md` sonunda.
+- Yerel deneme: `python build.py crazygames-sun` (http://localhost:8767; SDK "local"
+  ortamda çalışır ve her çağrıyı konsola yazar). Doğrulandı: SDK açılıyor, dil SDK'den
+  geliyor, BAŞLA/duraklat/devam doğru sırada gameplayStart/Stop gönderiyor, kayıt Data
+  modülüne yazılıyor.
+
 ## Yayınlama (itch.io)
 
 `python build.py paket` iki dosya üretir:
@@ -775,6 +815,9 @@ Dikkat edilecekler:
     açılış (`web/sw.js`). App Mall için yol Play Store (TWA) — kullanıcıya bırakıldı.
 31. Reddit tanıtımı (r/playmygame ve r/WebGames'e kullanıcı kendisi paylaştı) ve
     "YouTube için Shorts videoları hazırla" → `build.py shorts`.
+32. "Oyunu CrazyGames'e göre hazırlar mısın" → SDK v3 köprüsü (gameplay, happytime, ses,
+    Data modülüyle kayıt), dış bağlantısız paket (`build.py crazygames`), kurallara uygun
+    kapaklar ve sessiz önizleme videoları (`build.py crazygames-medya`), gönderim metni.
 
 ## Sonraki adımlar için fikirler (istenmedi)
 

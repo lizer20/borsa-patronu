@@ -264,6 +264,12 @@ static void KareGuncelle(Uygulama& u, float dt, const Girdi& girdi) {
         case Ekran::OYUN: OyunEkraniGuncelle(u, dt, g); break;
     }
     GorselGuncelle(u.oyun, dt);
+    // Oyun portali: oyuncu GERCEKTEN oynuyor mu (menu, duraklatma, ayarlar, oyun
+    // sonu ve cikis onayi "oynamiyor" sayilir; emir/kredi/yonetim penceresi oyunun parcasi).
+    g_portalSessiz = js_platform_sessiz() != 0;
+    const Oyun& o = u.oyun;
+    PlatformBildir(u.ekran == Ekran::OYUN && !o.duraklatildi && !o.sonPenceresiAcik && !a.ayarlarAcik && !a.cikisOnayiAcik,
+                   u.ekran == Ekran::OYUN ? o.rutbeIndex : -1);
     MuzikGuncelle(g_profil.muzikAcik);
 }
 

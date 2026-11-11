@@ -13,8 +13,16 @@
 //   devralma  501. hisseyi al, patron ol, yonetim kararinda kumar oyna
 //   zirve     10.000 TL'den Efsane Yatirimci'ya: rutbe rutbe hizli gecis
 //
+// Ayni dosya CrazyGames'in ONIZLEME videolarini da uretir (onizleme-yatay
+// 1920x1080, onizleme-dikey 1080x1620). Onlarin kurallari farkli: 15-20 sn, SES
+// YOK, hizlandirma ve siyah gecis YOK, ilk kare kapakla ayni, isletim sistemi
+// imleci gibi gorunen ok YOK (dokunus halkasi). Bu yuzden hazirlik ekran disinda
+// yapilir, video kapakla acilir ve oyuna yumusakca gecer; sonrasi kesintisiz,
+// gercek zamanli oynanistir.
+//
 // Kullanim: shorts_videosu.exe <ffmpeg> <tr|en> <haber|devralma|zirve> <cikti.mp4>
-// (python build.py shorts hepsini uretir)
+//           shorts_videosu.exe <ffmpeg> en <onizleme-yatay|onizleme-dikey> <cikti.mp4> <kapak.png>
+// (python build.py shorts / python build.py crazygames-medya)
 
 #define BORSA_ANA_YOK
 #include "../borsa_patronu.cpp"
@@ -30,12 +38,16 @@ static void Yaz(const char* bicim, ...) { // denge_botlari.h bunu ister
 }
 #include "denge_botlari.h"
 
-// Cikis karesi 1080x1920. Oyun sahnesi 540x960 (dikey yerlesim) ve 1,5 kat
-// buyutulup ustte 250 px'lik baslik bandi birakacak sekilde yerlestirilir.
-static const int VW = 1080, VH = 1920, FPS = 30;
-static const int SW = 540, SH = 960;
-static const float OLCEK = 1.5f;
-static const Vector2 OFS = {(VW - SW * OLCEK) / 2.0f, 250.0f};
+// Shorts: cikis karesi 1080x1920. Oyun sahnesi 540x960 (dikey yerlesim) ve 1,5
+// kat buyutulup ustte 250 px'lik baslik bandi birakacak sekilde yerlestirilir.
+// Onizleme videolarinda sahne kareyi bandsiz, tamamen doldurur (main'de ayarlanir).
+static int VW = 1080, VH = 1920;
+static int SW = 540, SH = 960;
+static float OLCEK = 1.5f;
+static Vector2 OFS = {(VW - SW * OLCEK) / 2.0f, 250.0f};
+static bool g_bant = true;      // ustte kanca alt yazisi bandi (Shorts)
+static bool g_dokunus = false;  // imlec yerine dokunus halkasi (onizleme)
+static const int FPS = 30;
 static const float DT = 1.0f / FPS;
 
 static Uygulama* U = nullptr;
@@ -88,6 +100,15 @@ static Girdi ImlecGirdisi() {
 static void ImlecCiz() {
     if (!g_imlecVar) return;
     Vector2 p = {OFS.x + g_imlec.x * OLCEK, OFS.y + g_imlec.y * OLCEK};
+    if (g_dokunus) { // parmak: yari saydam daire, dokununca halka
+        DrawCircleV(p, 22.0f, Fade(WHITE, 0.35f));
+        DrawRing(p, 20.0f, 24.0f, 0, 360, 32, Fade(WHITE, 0.8f));
+        if (g_halka > 0.0f) {
+            float r = 26.0f + (1.0f - g_halka) * 40.0f;
+            DrawRing(p, r - 5.0f, r, 0, 360, 32, Fade(RENK_ALTIN, g_halka));
+        }
+        return;
+    }
     if (g_halka > 0.0f) {
         float r = 16.0f + (1.0f - g_halka) * 40.0f;
         DrawRing(p, r - 5.0f, r, 0, 360, 32, Fade(RENK_ALTIN, g_halka));
@@ -99,6 +120,7 @@ static void ImlecCiz() {
 }
 
 static void BaslikBandiCiz() {
+    if (!g_bant) return;
     YaziCizOrtali("BORSA PATRONU", VW / 2 + 3, 34 + 3, 40, Fade(BLACK, 0.6f));
     YaziCizOrtali("BORSA PATRONU", VW / 2, 34, 40, RENK_ALTIN);
     if (g_altyazi.empty()) return;
@@ -113,15 +135,21 @@ static void HamKareGonder() {
     g_kare++;
 }
 
+static Texture2D g_kapak = {};
+static float g_kapakAlfa = 0.0f; // >0: oyunun ustunde kapak (onizlemenin acilisi)
+
 static void KareyiYaz() {
     KareCiz(*U); // oyunun kendi cizimi (sahne dokusuna)
     BeginTextureMode(g_cikis);
     DrawRectangleGradientV(0, 0, VW, VH, RENK_ARKAPLAN_UST, RENK_ARKAPLAN_ALT);
     const Texture2D& t = U->sahne.texture;
     float w = SW * OLCEK, h = SH * OLCEK;
-    DrawRectangleRounded({OFS.x - 8, OFS.y - 8, w + 16, h + 16}, 0.03f, 12, Color{40, 44, 54, 255});
+    if (g_bant) DrawRectangleRounded({OFS.x - 8, OFS.y - 8, w + 16, h + 16}, 0.03f, 12, Color{40, 44, 54, 255});
     DrawTexturePro(t, {0, 0, (float)t.width, -(float)t.height}, {OFS.x, OFS.y, w, h}, {0, 0}, 0, WHITE);
     ImlecCiz();
+    if (g_kapakAlfa > 0.0f)
+        DrawTexturePro(g_kapak, {0, 0, (float)g_kapak.width, (float)g_kapak.height}, {0, 0, (float)VW, (float)VH}, {0, 0}, 0,
+                       Fade(WHITE, g_kapakAlfa));
     if (g_karartma > 0.001f) DrawRectangle(0, 0, VW, VH, Fade(BLACK, g_karartma));
     BaslikBandiCiz(); // bant karartmanin USTUNDE: gecislerde de kanca okunur
     EndTextureMode();
@@ -187,7 +215,7 @@ static int EnYeniSirketHaberi(float esik) {
 // Dikey ekranda bir varligin cipi (secili degilse once ona dokunulur).
 static void VarlikSec(int i) {
     Arayuz& a = U->ui;
-    if (a.seciliVarlik == i) return;
+    if (!g_dikey || a.seciliVarlik == i) return;
     for (int k = 0; k < (int)a.dCipVarlik.size(); k++)
         if (a.dCipVarlik[k] == i) { Tikla([&a, k] { return a.dCip[k]; }); return; }
 }
@@ -341,12 +369,71 @@ static void ZirveVideosu() {
     }
 }
 
+// CrazyGames onizlemesi: hazirlik EKRAN DISINDA (rutbe 2, bot oynar, bir iyi haber
+// gelene kadar); video kapakla acilir, oyuna yumusakca gecer ve oradan sonra her
+// sey gercek zamanlidir: haber, alim, 5 saniye sonra fiyatin sicramasi, satis,
+// ardindan bot oynamaya devam eder. Toplam 18 sn.
+static void OnizlemeVideosu() {
+    Oyun& o = U->oyun;
+    Arayuz& a = U->ui;
+    g_botAktif = true;
+    for (int i = 0; i < 60 * 60 * 40 && o.rutbeIndex < 2; i++) Ilerle(Girdi());
+    for (int i = 0; i < 60 * 60 * 10 && EnYeniSirketHaberi(1.05f) < 0; i++) Ilerle(Girdi());
+    g_botAktif = false;
+    int hk = EnYeniSirketHaberi(1.05f);
+    int hisse = hk >= 0 ? o.bekleyenHaberler[hk].hisseIndex : 0;
+    string haberMetni = hk >= 0 ? o.bekleyenHaberler[hk].metin : "";
+    g_karartma = g_karartmaHedef = 0.0f;
+    g_imlec = {SW * 0.62f, SH * 0.72f};
+    // 1 sn kapak, 0,5 sn gecis (oyun bu sirada gercek zamanli akar)
+    g_kapakAlfa = 1.0f;
+    for (int i = 0; i < FPS + FPS / 2; i++) {
+        if (i >= FPS) g_kapakAlfa = 1.0f - (float)(i - FPS) / (FPS / 2);
+        Ilerle(Girdi());
+        KareyiYaz();
+    }
+    g_kapakAlfa = 0.0f;
+    VarlikSec(hisse);
+    Tikla([&] { return a.adetBtn[7].rect; }, 12);
+    Tikla([&] { return a.alBtn[hisse].rect; }, 12);
+    for (int i = 0; i < FPS * 8; i++) {
+        bool bekliyor = false;
+        for (auto& bh : o.bekleyenHaberler)
+            if (bh.metin == haberMetni) bekliyor = true;
+        if (!bekliyor) break;
+        Bekle(1);
+    }
+    Bekle(50);
+    Tikla([&] { return a.satBtn[hisse].rect; }, 12);
+    // Kalan sure durgun kalmasin: grafik modlari (yuzde, sonra net deger
+    // gecmisi: bastan buyana yukselis). Piyasa bu sirada akmaya devam eder.
+    Bekle(20);
+    Tikla([&] { return a.grafikModBtn.rect; }, 16);
+    Bekle(45);
+    Tikla([&] { return a.grafikModBtn.rect; }, 10);
+    g_imlecVar = false;
+    while (g_kare < FPS * 18) Bekle(1);
+}
+
 int main(int argc, char** argv) {
     if (argc < 5) {
         printf("kullanim: shorts_videosu <ffmpeg> <tr|en> <haber|devralma|zirve> <cikti.mp4>\n");
         return 2;
     }
     const string ffmpeg = argv[1], dil = argv[2], tur = argv[3], cikti = argv[4];
+    const bool onizleme = tur.rfind("onizleme", 0) == 0;
+    if (onizleme) {
+        // Yatay: 1280x720 sahne x1,5 = 1920x1080. Dikey (2:3): 600x900 sahne x1,8 = 1080x1620.
+        const bool dikey = (tur == "onizleme-dikey");
+        SW = dikey ? 600 : 1280;
+        SH = dikey ? 900 : 720;
+        OLCEK = dikey ? 1.8f : 1.5f;
+        VW = (int)(SW * OLCEK);
+        VH = (int)(SH * OLCEK);
+        OFS = {0, 0};
+        g_bant = false;
+        g_dokunus = true;
+    }
     const string sessiz = cikti + ".sessiz.mp4", ses = cikti + ".wav";
 
     SetTraceLogLevel(LOG_WARNING);
@@ -360,8 +447,13 @@ int main(int argc, char** argv) {
     g_profil.rehberGoruldu = true;
     g_dil = (dil == "en") ? Dil::EN : Dil::TR;
     PaletiAyarla(false);
-    SahneBoyutuAyarla(u, SW, SH, true);
+    SahneBoyutuAyarla(u, SW, SH, SW < SH);
     g_cikis = LoadRenderTexture(VW, VH);
+    if (onizleme) {
+        if (argc < 6) { printf("onizleme icin kapak.png gerekli\n"); return 2; }
+        g_kapak = LoadTexture(argv[5]);
+        SetTextureFilter(g_kapak, TEXTURE_FILTER_BILINEAR);
+    }
 
     string komut = "\"\"" + ffmpeg + "\" -y -loglevel error -f rawvideo -pix_fmt rgba -s " + to_string(VW) + "x" + to_string(VH) +
                    " -r " + to_string(FPS) + " -i - -vf vflip -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p \"" + sessiz + "\"\"";
@@ -383,6 +475,18 @@ int main(int argc, char** argv) {
     u.ekran = Ekran::OYUN;
     u.oyunVar = true;
 
+    if (onizleme) {
+        OnizlemeVideosu(); // kapanis karti, karartma ve ses YOK (kural)
+        _pclose(g_ffmpeg);
+        remove(cikti.c_str());
+        int r = rename(sessiz.c_str(), cikti.c_str());
+        printf("  %s: %.1f sn, %d kare, %d tik, sessiz (%s)\n", cikti.c_str(), (float)g_kare / FPS, g_kare,
+               (int)g_tikKareleri.size(), r == 0 ? "tamam" : "HATA");
+        UnloadTexture(g_kapak);
+        UnloadRenderTexture(g_cikis);
+        UygulamaKapat(u);
+        return r == 0 ? 0 : 1;
+    }
     if (tur == "haber") HaberVideosu();
     else if (tur == "devralma") DevralmaVideosu();
     else ZirveVideosu();

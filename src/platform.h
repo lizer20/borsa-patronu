@@ -15,9 +15,12 @@
 #if BORSA_WEB
 EM_JS_DEPS(borsa_depo_bagimliliklari, "$UTF8ToString,$stringToUTF8,$lengthBytesUTF8");
 
+// Kayit deposu: oyun portali kendi deposunu verdiyse o (CrazyGames: SDK.data,
+// oyuncu giris yapinca hesabina esitlenir), yoksa tarayicinin localStorage'i.
+// Module.depolama localStorage ile ayni arayuzdedir (getItem / setItem).
 EM_JS(int, js_depo_yaz, (const char* anahtar, const char* veri), {
     try {
-        localStorage.setItem(UTF8ToString(anahtar), UTF8ToString(veri));
+        (Module.depolama || localStorage).setItem(UTF8ToString(anahtar), UTF8ToString(veri));
         return 1;
     } catch (e) {
         return 0;
@@ -27,7 +30,7 @@ EM_JS(int, js_depo_yaz, (const char* anahtar, const char* veri), {
 // Donen isaretci malloc ile ayrilir; cagiran free() etmelidir. Anahtar yoksa 0.
 EM_JS(char*, js_depo_oku, (const char* anahtar), {
     try {
-        var v = localStorage.getItem(UTF8ToString(anahtar));
+        var v = (Module.depolama || localStorage).getItem(UTF8ToString(anahtar));
         if (v === null) return 0;
         var n = lengthBytesUTF8(v) + 1;
         var p = _malloc(n);
@@ -39,7 +42,8 @@ EM_JS(char*, js_depo_oku, (const char* anahtar), {
 });
 
 EM_JS(int, js_tarayici_turkce, (), {
-    var l = (navigator.language || navigator.userLanguage || "").toLowerCase();
+    var p = Module.platform;
+    var l = ((p && p.dil) || navigator.language || navigator.userLanguage || "").toLowerCase();
     return l.indexOf("tr") === 0 ? 1 : 0;
 });
 
@@ -107,6 +111,22 @@ EM_JS(double, js_tuval_hedef_boyutu, (), {
     return w * 10000 + h;
 });
 
+// ---- OYUN PORTALI KOPRUSU (CrazyGames) ----
+// Portal paketinde sayfa betigi (web/crazygames.js) Module.platform nesnesini
+// kurar; web sitesinde, itch.io'da ve Chrome uzantisinda bu nesne YOKTUR ve
+// asagidakilerin hepsi hicbir sey yapmaz. Yani .wasm her yerde aynidir.
+//   oynaniyor(1/0)  oyuncu oynuyor / menude-duraklatmada (gameplayStart/Stop)
+//   mutlu()         ozel bir an: rutbe atlama (happytime)
+//   sessiz          portal sesi kapattiysa true (oyunun kendi ses ayarindan ONCE gelir)
+EM_JS(int, js_platform_portal, (), { return Module.platform ? 1 : 0; });
+EM_JS(void, js_platform_oynaniyor, (int evet), {
+    try { if (Module.platform) Module.platform.oynaniyor(!!evet); } catch (e) {}
+});
+EM_JS(void, js_platform_mutlu, (), {
+    try { if (Module.platform) Module.platform.mutlu(); } catch (e) {}
+});
+EM_JS(int, js_platform_sessiz, (), { return (Module.platform && Module.platform.sessiz) ? 1 : 0; });
+
 static string DepoAnahtari(const string& ad) { return "borsa_patronu:" + ad; }
 
 static bool DepoYaz(const string& ad, const string& icerik) {
@@ -157,7 +177,27 @@ static bool DepoVarMi(const string& ad) {
     return f.good();
 }
 
+static int js_platform_portal() { return 0; }
+static void js_platform_oynaniyor(int) {}
+static void js_platform_mutlu() {}
+static int js_platform_sessiz() { return 0; }
+
 #endif
+
+// Oyun bir oyun portalinin (CrazyGames) icinde mi? Oradayken baska bir siteye
+// (oyunun kendi sitesine bile) baglanti verilmez: portal kurali.
+static bool PortalIcinde() { return js_platform_portal() != 0; }
+
+// Her karede cagrilir; portala yalnizca DEGISIKLIKLERI bildirir.
+static void PlatformBildir(bool oynaniyor, int rutbe) {
+    static int sonOynaniyor = -1, sonRutbe = -1;
+    if ((int)oynaniyor != sonOynaniyor) {
+        sonOynaniyor = oynaniyor;
+        js_platform_oynaniyor(oynaniyor ? 1 : 0);
+    }
+    if (sonRutbe >= 0 && rutbe > sonRutbe) js_platform_mutlu();
+    sonRutbe = rutbe;
+}
 
 // Ilk acilista dil secimi icin: isletim sistemi / tarayici Turkce mi?
 // (windows.h raylib ile isim cakismasi yaptigi icin - Rectangle, CloseWindow,

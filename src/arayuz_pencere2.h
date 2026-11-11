@@ -200,7 +200,9 @@ static string TarihMetni(int tarih) {
 static void SkoruKopyala(Uygulama& u) {
     Oyun& o = u.oyun;
     string metin = string("Borsa Patronu - ") + M("Günün Piyasası ", "Daily Market ") + TarihMetni(o.gunlukTarih) + ": " +
-                   Para(o.bitisNetDeger, 0) + "  https://emrebiltekin.me/borsa-patronu/";
+                   Para(o.bitisNetDeger, 0);
+    // Oyun portalinda baska bir siteye (oyunun kendi sitesine de) baglanti verilmez.
+    if (!PortalIcinde()) metin += "  https://emrebiltekin.me/borsa-patronu/";
     SetClipboardText(metin.c_str());
     u.ui.kopyaBildirimSuresi = 2.5f;
 }
